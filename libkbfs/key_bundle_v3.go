@@ -15,6 +15,7 @@ import (
 	"github.com/keybase/kbfs/kbfscodec"
 	"github.com/keybase/kbfs/kbfscrypto"
 	"github.com/keybase/kbfs/kbfshash"
+	"github.com/keybase/kbfs/kbfsmd"
 	"github.com/pkg/errors"
 )
 
@@ -68,7 +69,7 @@ func (dkimV3 DeviceKeyInfoMapV3) fillInDeviceInfos(crypto cryptoPure,
 			continue
 		}
 
-		clientInfo, serverHalf, err := splitTLFCryptKey(
+		clientInfo, serverHalf, err := kbfsmd.SplitTLFCryptKey(
 			crypto, uid, tlfCryptKey, ePrivKey, ePubIndex, k)
 		if err != nil {
 			return nil, err

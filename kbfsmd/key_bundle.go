@@ -5,7 +5,9 @@
 package kbfsmd
 
 import (
+	"github.com/keybase/client/go/protocol/keybase1"
 	"github.com/keybase/go-codec/codec"
+	"github.com/keybase/kbfs/kbfscrypto"
 	"github.com/keybase/kbfs/kbfshash"
 )
 
@@ -27,4 +29,69 @@ type TLFCryptKeyInfo struct {
 	EPubKeyIndex int `codec:"i,omitempty"`
 
 	codec.UnknownFieldSetHandler
+}
+
+// cryptoPure contains all methods of Crypto that don't depend on
+// implicit state, i.e. they're pure functions of the input.
+type cryptoPure interface {
+	// MakeRandomTLFCryptKeyServerHalf generates the server-side of a
+	// top-level folder crypt key.
+	MakeRandomTLFCryptKeyServerHalf() (
+		kbfscrypto.TLFCryptKeyServerHalf, error)
+
+	// EncryptTLFCryptKeyClientHalf encrypts a TLFCryptKeyClientHalf
+	// using both a TLF's ephemeral private key and a device pubkey.
+	EncryptTLFCryptKeyClientHalf(
+		privateKey kbfscrypto.TLFEphemeralPrivateKey,
+		publicKey kbfscrypto.CryptPublicKey,
+		clientHalf kbfscrypto.TLFCryptKeyClientHalf) (
+		EncryptedTLFCryptKeyClientHalf, error)
+
+	// GetTLFCryptKeyServerHalfID creates a unique ID for this particular
+	// kbfscrypto.TLFCryptKeyServerHalf.
+	GetTLFCryptKeyServerHalfID(
+		user keybase1.UID, devicePubKey kbfscrypto.CryptPublicKey,
+		serverHalf kbfscrypto.TLFCryptKeyServerHalf) (
+		TLFCryptKeyServerHalfID, error)
+}
+
+// SplitTLFCryptKey splits the given TLFCryptKey into two parts -- the
+// client-side part (which is encrypted with the given keys), and the
+// server-side part, which will be uploaded to the server.
+func SplitTLFCryptKey(crypto cryptoPure, uid keybase1.UID,
+	tlfCryptKey kbfscrypto.TLFCryptKey,
+	ePrivKey kbfscrypto.TLFEphemeralPrivateKey, ePubIndex int,
+	pubKey kbfscrypto.CryptPublicKey) (
+	TLFCryptKeyInfo, kbfscrypto.TLFCryptKeyServerHalf, error) {
+	//    * create a new random server half
+	//    * mask it with the key to get the client half
+	//    * encrypt the client half
+	var serverHalf kbfscrypto.TLFCryptKeyServerHalf
+	serverHalf, err := crypto.MakeRandomTLFCryptKeyServerHalf()
+	if err != nil {
+		return TLFCryptKeyInfo{}, kbfscrypto.TLFCryptKeyServerHalf{}, err
+	}
+
+	clientHalf := kbfscrypto.MaskTLFCryptKey(serverHalf, tlfCryptKey)
+
+	var encryptedClientHalf EncryptedTLFCryptKeyClientHalf
+	encryptedClientHalf, err =
+		crypto.EncryptTLFCryptKeyClientHalf(ePrivKey, pubKey, clientHalf)
+	if err != nil {
+		return TLFCryptKeyInfo{}, kbfscrypto.TLFCryptKeyServerHalf{}, err
+	}
+
+	var serverHalfID TLFCryptKeyServerHalfID
+	serverHalfID, err =
+		crypto.GetTLFCryptKeyServerHalfID(uid, pubKey, serverHalf)
+	if err != nil {
+		return TLFCryptKeyInfo{}, kbfscrypto.TLFCryptKeyServerHalf{}, err
+	}
+
+	clientInfo := TLFCryptKeyInfo{
+		ClientHalf:   encryptedClientHalf,
+		ServerHalfID: serverHalfID,
+		EPubKeyIndex: ePubIndex,
+	}
+	return clientInfo, serverHalf, nil
 }

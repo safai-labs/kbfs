@@ -11,6 +11,7 @@ import (
 	"github.com/keybase/go-codec/codec"
 	"github.com/keybase/kbfs/kbfscodec"
 	"github.com/keybase/kbfs/kbfscrypto"
+	"github.com/keybase/kbfs/kbfsmd"
 	"github.com/pkg/errors"
 )
 
@@ -85,7 +86,7 @@ func (dkimV2 DeviceKeyInfoMapV2) fillInDeviceInfos(crypto cryptoPure,
 			continue
 		}
 
-		clientInfo, serverHalf, err := splitTLFCryptKey(
+		clientInfo, serverHalf, err := kbfsmd.SplitTLFCryptKey(
 			crypto, uid, tlfCryptKey, ePrivKey, ePubIndex, k)
 		if err != nil {
 			return nil, err

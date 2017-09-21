@@ -98,47 +98,6 @@ func (serverHalves UserDeviceKeyServerHalves) mergeUsers(
 	return merged, nil
 }
 
-// splitTLFCryptKey splits the given TLFCryptKey into two parts -- the
-// client-side part (which is encrypted with the given keys), and the
-// server-side part, which will be uploaded to the server.
-func splitTLFCryptKey(crypto cryptoPure, uid keybase1.UID,
-	tlfCryptKey kbfscrypto.TLFCryptKey,
-	ePrivKey kbfscrypto.TLFEphemeralPrivateKey, ePubIndex int,
-	pubKey kbfscrypto.CryptPublicKey) (
-	TLFCryptKeyInfo, kbfscrypto.TLFCryptKeyServerHalf, error) {
-	//    * create a new random server half
-	//    * mask it with the key to get the client half
-	//    * encrypt the client half
-	var serverHalf kbfscrypto.TLFCryptKeyServerHalf
-	serverHalf, err := crypto.MakeRandomTLFCryptKeyServerHalf()
-	if err != nil {
-		return TLFCryptKeyInfo{}, kbfscrypto.TLFCryptKeyServerHalf{}, err
-	}
-
-	clientHalf := kbfscrypto.MaskTLFCryptKey(serverHalf, tlfCryptKey)
-
-	var encryptedClientHalf EncryptedTLFCryptKeyClientHalf
-	encryptedClientHalf, err =
-		crypto.EncryptTLFCryptKeyClientHalf(ePrivKey, pubKey, clientHalf)
-	if err != nil {
-		return TLFCryptKeyInfo{}, kbfscrypto.TLFCryptKeyServerHalf{}, err
-	}
-
-	var serverHalfID TLFCryptKeyServerHalfID
-	serverHalfID, err =
-		crypto.GetTLFCryptKeyServerHalfID(uid, pubKey, serverHalf)
-	if err != nil {
-		return TLFCryptKeyInfo{}, kbfscrypto.TLFCryptKeyServerHalf{}, err
-	}
-
-	clientInfo := TLFCryptKeyInfo{
-		ClientHalf:   encryptedClientHalf,
-		ServerHalfID: serverHalfID,
-		EPubKeyIndex: ePubIndex,
-	}
-	return clientInfo, serverHalf, nil
-}
-
 type deviceServerHalfRemovalInfo map[kbfscrypto.CryptPublicKey][]TLFCryptKeyServerHalfID
 
 // userServerHalfRemovalInfo contains a map from devices (identified
