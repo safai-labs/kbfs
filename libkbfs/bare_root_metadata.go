@@ -314,7 +314,7 @@ func MakeInitialBareRootMetadata(
 	ver MetadataVer, tlfID tlf.ID, h tlf.Handle) (
 	MutableBareRootMetadata, error) {
 	if ver < kbfsmd.FirstValidMetadataVer {
-		return nil, InvalidMetadataVersionError{tlfID, ver}
+		return nil, kbfsmd.InvalidMetadataVersionError{tlfID, ver}
 	}
 	if ver > kbfsmd.SegregatedKeyBundlesVer {
 		// Shouldn't be possible at the moment.

@@ -458,19 +458,6 @@ func (e NoSuchMDError) Error() string {
 		"%s", e.Tlf, e.Rev, e.BID)
 }
 
-// InvalidMetadataVersionError indicates that an invalid metadata version was
-// used.
-type InvalidMetadataVersionError struct {
-	Tlf         tlf.ID
-	MetadataVer MetadataVer
-}
-
-// Error implements the error interface for InvalidMetadataVersionError.
-func (e InvalidMetadataVersionError) Error() string {
-	return fmt.Sprintf("Invalid metadata version %d for folder %s",
-		int(e.MetadataVer), e.Tlf)
-}
-
 // NewMetadataVersionError indicates that the metadata for the given
 // folder has been written using a new metadata version that our
 // client doesn't understand.

@@ -21,3 +21,16 @@ func (e MissingDataError) Error() string {
 	return fmt.Sprintf("No serialized private data in the metadata "+
 		"for directory %v", e.tlfID)
 }
+
+// InvalidMetadataVersionError indicates that an invalid metadata version was
+// used.
+type InvalidMetadataVersionError struct {
+	Tlf         tlf.ID
+	MetadataVer MetadataVer
+}
+
+// Error implements the error interface for InvalidMetadataVersionError.
+func (e InvalidMetadataVersionError) Error() string {
+	return fmt.Sprintf("Invalid metadata version %d for folder %s",
+		int(e.MetadataVer), e.Tlf)
+}

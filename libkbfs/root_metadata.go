@@ -1284,7 +1284,7 @@ func DecodeRootMetadata(codec kbfscodec.Codec, tlf tlf.ID,
 	ver, max MetadataVer, buf []byte) (
 	MutableBareRootMetadata, error) {
 	if ver < kbfsmd.FirstValidMetadataVer {
-		return nil, InvalidMetadataVersionError{tlf, ver}
+		return nil, kbfsmd.InvalidMetadataVersionError{tlf, ver}
 	} else if ver > max {
 		return nil, NewMetadataVersionError{tlf, ver}
 	}
@@ -1313,7 +1313,7 @@ func DecodeRootMetadataSigned(
 	untrustedServerTimestamp time.Time) (
 	*RootMetadataSigned, error) {
 	if ver < kbfsmd.FirstValidMetadataVer {
-		return nil, InvalidMetadataVersionError{tlf, ver}
+		return nil, kbfsmd.InvalidMetadataVersionError{tlf, ver}
 	} else if ver > max {
 		return nil, NewMetadataVersionError{tlf, ver}
 	}
