@@ -47,10 +47,10 @@ func (c CryptoLocal) prepareTLFCryptKeyClientHalf(
 	// implementation in CryptoClient.
 	expectedLen := len((kbfscrypto.TLFCryptKeyClientHalf{}).Data()) +
 		box.Overhead
-	if len(encryptedClientHalf.EncryptedData.EncryptedData) != expectedLen {
+	if len(encryptedClientHalf.Data) != expectedLen {
 		return [24]byte{}, errors.Errorf("Expected %d bytes, got %d",
 			expectedLen,
-			len(encryptedClientHalf.EncryptedData.EncryptedData))
+			len(encryptedClientHalf.Data))
 	}
 
 	if len(encryptedClientHalf.Nonce) != len(nonce) {
@@ -74,7 +74,7 @@ func (c CryptoLocal) DecryptTLFCryptKeyClientHalf(ctx context.Context,
 
 	publicKeyData := publicKey.Data()
 	privateKeyData := c.cryptPrivateKey.Data()
-	decryptedData, ok := box.Open(nil, encryptedClientHalf.EncryptedData.EncryptedData,
+	decryptedData, ok := box.Open(nil, encryptedClientHalf.Data,
 		&nonce, &publicKeyData, &privateKeyData)
 	if !ok {
 		return kbfscrypto.TLFCryptKeyClientHalf{},

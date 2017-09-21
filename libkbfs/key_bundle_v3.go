@@ -48,7 +48,7 @@ func (dkimV3 DeviceKeyInfoMapV3) Size() int {
 		// We are not using v.ClientHalf.encryptedData here since that would
 		// include the size of struct itself which is already counted in
 		// cache.StaticSizeOfMapWithSize.
-		contentSize += len(v.ClientHalf.EncryptedData.EncryptedData) +
+		contentSize += len(v.ClientHalf.Data) +
 			len(v.ClientHalf.EncryptedData.Nonce)
 	}
 

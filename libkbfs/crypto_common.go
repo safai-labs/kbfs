@@ -191,9 +191,9 @@ func (c CryptoCommon) EncryptTLFCryptKeyClientHalf(
 
 	return EncryptedTLFCryptKeyClientHalf{
 		kbfscrypto.EncryptedData{
-			Version:       kbfscrypto.EncryptionSecretbox,
-			Nonce:         nonce[:],
-			EncryptedData: encryptedBytes,
+			Version: kbfscrypto.EncryptionSecretbox,
+			Nonce:   nonce[:],
+			Data:    encryptedBytes,
 		},
 	}, nil
 }
@@ -208,9 +208,9 @@ func (c CryptoCommon) encryptData(data []byte, key [32]byte) (kbfscrypto.Encrypt
 	sealedData := secretbox.Seal(nil, data, &nonce, &key)
 
 	return kbfscrypto.EncryptedData{
-		Version:       kbfscrypto.EncryptionSecretbox,
-		Nonce:         nonce[:],
-		EncryptedData: sealedData,
+		Version: kbfscrypto.EncryptionSecretbox,
+		Nonce:   nonce[:],
+		Data:    sealedData,
 	}, nil
 }
 
@@ -245,7 +245,7 @@ func (c CryptoCommon) decryptData(encryptedData kbfscrypto.EncryptedData, key [3
 	copy(nonce[:], encryptedData.Nonce)
 
 	decryptedData, ok := secretbox.Open(
-		nil, encryptedData.EncryptedData, &nonce, &key)
+		nil, encryptedData.Data, &nonce, &key)
 	if !ok {
 		return nil, errors.WithStack(libkb.DecryptionError{})
 	}

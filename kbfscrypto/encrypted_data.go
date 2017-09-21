@@ -34,15 +34,15 @@ func (v EncryptionVer) String() string {
 type EncryptedData struct {
 	// Exported only for serialization purposes. Should only be
 	// used by implementations of Crypto.
-	Version       EncryptionVer `codec:"v"`
-	EncryptedData []byte        `codec:"e"`
-	Nonce         []byte        `codec:"n"`
+	Version EncryptionVer `codec:"v"`
+	Data    []byte        `codec:"e"`
+	Nonce   []byte        `codec:"n"`
 }
 
 // Size implements the cache.Measurable interface.
 func (ed EncryptedData) Size() int {
 	return cache.IntSize /* ed.Version */ +
-		cache.PtrSize + len(ed.EncryptedData) + cache.PtrSize + len(ed.Nonce)
+		cache.PtrSize + len(ed.Data) + cache.PtrSize + len(ed.Nonce)
 }
 
 func (ed EncryptedData) String() string {
@@ -50,6 +50,6 @@ func (ed EncryptedData) String() string {
 		return "EncryptedData{}"
 	}
 	return fmt.Sprintf("%s{data=%s, nonce=%s}",
-		ed.Version, hex.EncodeToString(ed.EncryptedData),
+		ed.Version, hex.EncodeToString(ed.Data),
 		hex.EncodeToString(ed.Nonce))
 }

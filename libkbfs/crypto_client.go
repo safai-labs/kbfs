@@ -133,13 +133,13 @@ func (c *CryptoClient) prepareTLFCryptKeyClientHalf(
 				Ver: encryptedClientHalf.Version})
 	}
 
-	if len(encryptedClientHalf.EncryptedData.EncryptedData) != len(encryptedData) {
+	if len(encryptedClientHalf.Data) != len(encryptedData) {
 		return keybase1.EncryptedBytes32{}, keybase1.BoxNonce{},
 			errors.Errorf("Expected %d bytes, got %d",
 				len(encryptedData),
-				len(encryptedClientHalf.EncryptedData.EncryptedData))
+				len(encryptedClientHalf.Data))
 	}
-	copy(encryptedData[:], encryptedClientHalf.EncryptedData.EncryptedData)
+	copy(encryptedData[:], encryptedClientHalf.Data)
 
 	if len(encryptedClientHalf.Nonce) != len(nonce) {
 		return keybase1.EncryptedBytes32{}, keybase1.BoxNonce{},
