@@ -74,27 +74,25 @@ type SessionInfo struct {
 	VerifyingKey   kbfscrypto.VerifyingKey
 }
 
-type encryptedData = kbfscrypto.EncryptedData
-
 // EncryptedTLFCryptKeyClientHalf is an encrypted
 // TLFCryptKeyClientHalf object.
 type EncryptedTLFCryptKeyClientHalf struct {
-	encryptedData
+	kbfscrypto.EncryptedData
 }
 
 // EncryptedPrivateMetadata is an encrypted PrivateMetadata object.
 type EncryptedPrivateMetadata struct {
-	encryptedData
+	kbfscrypto.EncryptedData
 }
 
 // EncryptedBlock is an encrypted Block.
 type EncryptedBlock struct {
-	encryptedData
+	kbfscrypto.EncryptedData
 }
 
 // EncryptedTLFCryptKeys is an encrypted TLFCryptKey array.
 type EncryptedTLFCryptKeys struct {
-	encryptedData
+	kbfscrypto.EncryptedData
 }
 
 // EncryptedMerkleLeaf is an encrypted Merkle leaf.

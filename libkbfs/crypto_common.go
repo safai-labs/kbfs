@@ -190,7 +190,7 @@ func (c CryptoCommon) EncryptTLFCryptKeyClientHalf(
 	encryptedBytes := box.Seal(nil, clientHalfData[:], &nonce, (*[32]byte)(&dhKeyPair.Public), &privateKeyData)
 
 	return EncryptedTLFCryptKeyClientHalf{
-		encryptedData{
+		kbfscrypto.EncryptedData{
 			Version:       kbfscrypto.EncryptionSecretbox,
 			Nonce:         nonce[:],
 			EncryptedData: encryptedBytes,
@@ -198,16 +198,16 @@ func (c CryptoCommon) EncryptTLFCryptKeyClientHalf(
 	}, nil
 }
 
-func (c CryptoCommon) encryptData(data []byte, key [32]byte) (encryptedData, error) {
+func (c CryptoCommon) encryptData(data []byte, key [32]byte) (kbfscrypto.EncryptedData, error) {
 	var nonce [24]byte
 	err := kbfscrypto.RandRead(nonce[:])
 	if err != nil {
-		return encryptedData{}, err
+		return kbfscrypto.EncryptedData{}, err
 	}
 
 	sealedData := secretbox.Seal(nil, data, &nonce, &key)
 
-	return encryptedData{
+	return kbfscrypto.EncryptedData{
 		Version:       kbfscrypto.EncryptionSecretbox,
 		Nonce:         nonce[:],
 		EncryptedData: sealedData,
@@ -231,7 +231,7 @@ func (c CryptoCommon) EncryptPrivateMetadata(
 	return EncryptedPrivateMetadata{encryptedData}, nil
 }
 
-func (c CryptoCommon) decryptData(encryptedData encryptedData, key [32]byte) ([]byte, error) {
+func (c CryptoCommon) decryptData(encryptedData kbfscrypto.EncryptedData, key [32]byte) ([]byte, error) {
 	if encryptedData.Version != kbfscrypto.EncryptionSecretbox {
 		return nil, errors.WithStack(
 			kbfscrypto.UnknownEncryptionVer{Ver: encryptedData.Version})
@@ -257,7 +257,7 @@ func (c CryptoCommon) decryptData(encryptedData encryptedData, key [32]byte) ([]
 func (c CryptoCommon) DecryptPrivateMetadata(
 	encryptedPmd EncryptedPrivateMetadata, key kbfscrypto.TLFCryptKey) (
 	PrivateMetadata, error) {
-	encodedPmd, err := c.decryptData(encryptedPmd.encryptedData, key.Data())
+	encodedPmd, err := c.decryptData(encryptedPmd.EncryptedData, key.Data())
 	if err != nil {
 		return PrivateMetadata{}, err
 	}
@@ -358,7 +358,7 @@ func (c CryptoCommon) DecryptBlock(
 	encryptedBlock EncryptedBlock, key kbfscrypto.BlockCryptKey,
 	block Block) error {
 	paddedBlock, err := c.decryptData(
-		encryptedBlock.encryptedData, key.Data())
+		encryptedBlock.EncryptedData, key.Data())
 	if err != nil {
 		return err
 	}
@@ -474,7 +474,7 @@ func (c CryptoCommon) EncryptTLFCryptKeys(
 func (c CryptoCommon) DecryptTLFCryptKeys(
 	encKeys EncryptedTLFCryptKeys, key kbfscrypto.TLFCryptKey) (
 	[]kbfscrypto.TLFCryptKey, error) {
-	encodedKeys, err := c.decryptData(encKeys.encryptedData, key.Data())
+	encodedKeys, err := c.decryptData(encKeys.EncryptedData, key.Data())
 	if err != nil {
 		return nil, err
 	}
