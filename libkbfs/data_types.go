@@ -74,24 +74,17 @@ type SessionInfo struct {
 	VerifyingKey   kbfscrypto.VerifyingKey
 }
 
-// EncryptedTLFCryptKeyClientHalf is an encrypted
-// TLFCryptKeyClientHalf object.
-type EncryptedTLFCryptKeyClientHalf struct {
-	kbfscrypto.EncryptedData
-}
+// EncryptedTLFCryptKeyClientHalf is a temporary alias.
+type EncryptedTLFCryptKeyClientHalf = kbfsmd.EncryptedTLFCryptKeyClientHalf
 
-// EncryptedPrivateMetadata is an encrypted PrivateMetadata object.
-type EncryptedPrivateMetadata struct {
-	kbfscrypto.EncryptedData
-}
+// EncryptedPrivateMetadata is a temporary alias.
+type EncryptedPrivateMetadata = kbfsmd.EncryptedPrivateMetadata
+
+// EncryptedTLFCryptKeys is a temporary alias.
+type EncryptedTLFCryptKeys = kbfsmd.EncryptedTLFCryptKeys
 
 // EncryptedBlock is an encrypted Block.
 type EncryptedBlock struct {
-	kbfscrypto.EncryptedData
-}
-
-// EncryptedTLFCryptKeys is an encrypted TLFCryptKey array.
-type EncryptedTLFCryptKeys struct {
 	kbfscrypto.EncryptedData
 }
 
@@ -130,7 +123,7 @@ const (
 	FirstValidKeyGen KeyGen = 1
 )
 
-// MetadataVer is a temporary alias for kbfsmd.MetadataVer.
+// MetadataVer is a temporary alias.
 type MetadataVer = kbfsmd.MetadataVer
 
 // DataVer is the type of a version for marshalled KBFS data
