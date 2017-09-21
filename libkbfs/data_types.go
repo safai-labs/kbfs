@@ -130,6 +130,7 @@ const (
 	FirstValidKeyGen KeyGen = 1
 )
 
+// MetadataVer is a temporary alias for kbfsmd.MetadataVer.
 type MetadataVer = kbfsmd.MetadataVer
 
 // DataVer is the type of a version for marshalled KBFS data
