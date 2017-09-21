@@ -15,6 +15,7 @@ import (
 	"github.com/keybase/kbfs/kbfscodec"
 	"github.com/keybase/kbfs/kbfscrypto"
 	"github.com/keybase/kbfs/kbfshash"
+	"github.com/keybase/kbfs/kbfsmd"
 	"github.com/keybase/kbfs/tlf"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/nacl/box"
@@ -69,33 +70,13 @@ func (c CryptoCommon) MakeMerkleHash(md *RootMetadataSigned) (MerkleHash, error)
 // MakeTLFWriterKeyBundleID implements the Crypto interface for CryptoCommon.
 func (c CryptoCommon) MakeTLFWriterKeyBundleID(wkb TLFWriterKeyBundleV3) (
 	TLFWriterKeyBundleID, error) {
-	if len(wkb.Keys) == 0 {
-		return TLFWriterKeyBundleID{}, errors.New(
-			"Writer key bundle with no keys (MakeTLFWriterKeyBundleID)")
-	}
-	buf, err := c.codec.Encode(wkb)
-	if err != nil {
-		return TLFWriterKeyBundleID{}, err
-	}
-	h, err := kbfshash.DefaultHash(buf)
-	if err != nil {
-		return TLFWriterKeyBundleID{}, err
-	}
-	return TLFWriterKeyBundleID{h}, nil
+	return kbfsmd.MakeTLFWriterKeyBundleID(c.codec, wkb)
 }
 
 // MakeTLFReaderKeyBundleID implements the Crypto interface for CryptoCommon.
 func (c CryptoCommon) MakeTLFReaderKeyBundleID(rkb TLFReaderKeyBundleV3) (
 	TLFReaderKeyBundleID, error) {
-	buf, err := c.codec.Encode(rkb)
-	if err != nil {
-		return TLFReaderKeyBundleID{}, err
-	}
-	h, err := kbfshash.DefaultHash(buf)
-	if err != nil {
-		return TLFReaderKeyBundleID{}, err
-	}
-	return TLFReaderKeyBundleID{h}, nil
+	return kbfsmd.MakeTLFReaderKeyBundleID(c.codec, rkb)
 }
 
 // MakeTemporaryBlockID implements the Crypto interface for CryptoCommon.
