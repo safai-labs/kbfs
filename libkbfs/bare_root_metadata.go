@@ -22,8 +22,8 @@ import (
 // BareRootMetadata is a read-only interface to the bare serializeable MD that
 // is signed by the reader or writer.
 type BareRootMetadata interface {
-	// TlfID returns the ID of the TLF this BareRootMetadata is for.
-	TlfID() tlf.ID
+	kbfsmd.RootMetadata
+
 	// KeyGenerationsToUpdate returns a range that has to be
 	// updated when rekeying. start is included, but end is not
 	// included. This range can be empty (i.e., start >= end), in
@@ -134,8 +134,6 @@ type BareRootMetadata interface {
 	GetPrevRoot() kbfsmd.ID
 	// IsUnmergedSet returns true if the unmerged bit is set.
 	IsUnmergedSet() bool
-	// GetSerializedPrivateMetadata returns the serialized private metadata as a byte slice.
-	GetSerializedPrivateMetadata() []byte
 	// GetSerializedWriterMetadata serializes the underlying writer metadata and returns the result.
 	GetSerializedWriterMetadata(codec kbfscodec.Codec) ([]byte, error)
 	// Version returns the metadata version.
