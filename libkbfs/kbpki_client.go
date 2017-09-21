@@ -12,6 +12,7 @@ import (
 	"github.com/keybase/client/go/logger"
 	"github.com/keybase/client/go/protocol/keybase1"
 	"github.com/keybase/kbfs/kbfscrypto"
+	"github.com/keybase/kbfs/kbfsmd"
 	"golang.org/x/net/context"
 )
 
@@ -252,7 +253,7 @@ func (k *KBPKIClient) IsTeamWriter(
 		EldestSeqno: userInfo.EldestSeqno,
 	}
 	teamInfo, err := k.serviceOwner.KeybaseService().LoadTeamPlusKeys(
-		ctx, tid, UnspecifiedKeyGen, desiredUser, keybase1.TeamRole_WRITER)
+		ctx, tid, kbfsmd.UnspecifiedKeyGen, desiredUser, keybase1.TeamRole_WRITER)
 	if err != nil {
 		return false, err
 	}
@@ -264,7 +265,7 @@ func (k *KBPKIClient) IsTeamReader(
 	ctx context.Context, tid keybase1.TeamID, uid keybase1.UID) (bool, error) {
 	desiredUser := keybase1.UserVersion{Uid: uid}
 	teamInfo, err := k.serviceOwner.KeybaseService().LoadTeamPlusKeys(
-		ctx, tid, UnspecifiedKeyGen, desiredUser, keybase1.TeamRole_READER)
+		ctx, tid, kbfsmd.UnspecifiedKeyGen, desiredUser, keybase1.TeamRole_READER)
 	if err != nil {
 		return false, err
 	}
@@ -279,7 +280,7 @@ func (k *KBPKIClient) GetTeamRootID(ctx context.Context, tid keybase1.TeamID) (
 	}
 
 	teamInfo, err := k.serviceOwner.KeybaseService().LoadTeamPlusKeys(
-		ctx, tid, UnspecifiedKeyGen, keybase1.UserVersion{},
+		ctx, tid, kbfsmd.UnspecifiedKeyGen, keybase1.UserVersion{},
 		keybase1.TeamRole_NONE)
 	if err != nil {
 		return keybase1.TeamID(""), err

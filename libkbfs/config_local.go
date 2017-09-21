@@ -268,14 +268,14 @@ func MakeLocalTeams(teams []libkb.NormalizedUsername) []TeamInfo {
 	for i := 0; i < len(teams); i++ {
 		cryptKey := MakeLocalTLFCryptKeyOrBust(
 			buildCanonicalPathForTlfType(tlf.SingleTeam, string(teams[i])),
-			FirstValidKeyGen)
+			kbfsmd.FirstValidKeyGen)
 		localTeams[i] = TeamInfo{
 			Name: teams[i],
 			TID:  keybase1.MakeTestTeamID(uint32(i + 1)),
 			CryptKeys: map[KeyGen]kbfscrypto.TLFCryptKey{
-				FirstValidKeyGen: cryptKey,
+				kbfsmd.FirstValidKeyGen: cryptKey,
 			},
-			LatestKeyGen: FirstValidKeyGen,
+			LatestKeyGen: kbfsmd.FirstValidKeyGen,
 		}
 		// If this is a subteam, set the root ID.
 		if strings.Contains(string(teams[i]), ".") {

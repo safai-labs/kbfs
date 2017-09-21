@@ -9,6 +9,7 @@ import (
 
 	"github.com/keybase/kbfs/kbfscodec"
 	"github.com/keybase/kbfs/kbfscrypto"
+	"github.com/keybase/kbfs/kbfsmd"
 	"github.com/keybase/kbfs/tlf"
 )
 
@@ -19,7 +20,7 @@ import (
 // server-side tests.
 func FakeInitialRekey(md MutableBareRootMetadata,
 	h tlf.Handle, pubKey kbfscrypto.TLFPublicKey) ExtraMetadata {
-	if md.LatestKeyGeneration() >= FirstValidKeyGen {
+	if md.LatestKeyGeneration() >= kbfsmd.FirstValidKeyGen {
 		panic(fmt.Errorf("FakeInitialRekey called on MD with existing key generations"))
 	}
 

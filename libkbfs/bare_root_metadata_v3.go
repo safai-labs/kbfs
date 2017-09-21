@@ -178,7 +178,7 @@ func (md *BareRootMetadataV3) TlfID() tlf.ID {
 // for BareRootMetadataV3.
 func (md *BareRootMetadataV3) KeyGenerationsToUpdate() (KeyGen, KeyGen) {
 	latest := md.LatestKeyGeneration()
-	if latest < FirstValidKeyGen {
+	if latest < kbfsmd.FirstValidKeyGen {
 		return 0, 0
 	}
 	// We only keep track of the latest key generation in extra.
@@ -189,7 +189,7 @@ func (md *BareRootMetadataV3) KeyGenerationsToUpdate() (KeyGen, KeyGen) {
 // BareRootMetadataV3.
 func (md *BareRootMetadataV3) LatestKeyGeneration() KeyGen {
 	if md.TlfID().Type() == tlf.Public {
-		return PublicKeyGen
+		return kbfsmd.PublicKeyGen
 	}
 	return md.WriterMetadata.LatestKeyGen
 }
@@ -1190,7 +1190,7 @@ func (md *BareRootMetadataV3) AddKeyGeneration(codec kbfscodec.Codec,
 	latestKeyGen := md.LatestKeyGeneration()
 	var encryptedHistoricKeys EncryptedTLFCryptKeys
 	if currCryptKey == (kbfscrypto.TLFCryptKey{}) {
-		if latestKeyGen >= FirstValidKeyGen {
+		if latestKeyGen >= kbfsmd.FirstValidKeyGen {
 			return nil, nil, errors.Errorf(
 				"Zero current crypt key with latest key generation %d",
 				latestKeyGen)
@@ -1215,12 +1215,12 @@ func (md *BareRootMetadataV3) AddKeyGeneration(codec kbfscodec.Codec,
 				existingReaderKeys, updatedReaderKeys)
 		}
 
-		if latestKeyGen < FirstValidKeyGen {
+		if latestKeyGen < kbfsmd.FirstValidKeyGen {
 			return nil, nil, errors.New(
 				"Non-zero current crypt key with no existing key generations")
 		}
 		var historicKeys []kbfscrypto.TLFCryptKey
-		if latestKeyGen > FirstValidKeyGen {
+		if latestKeyGen > kbfsmd.FirstValidKeyGen {
 			var err error
 			historicKeys, err = crypto.DecryptTLFCryptKeys(
 				currExtraV3.Wkb.EncryptedHistoricTLFCryptKeys,
@@ -1229,7 +1229,7 @@ func (md *BareRootMetadataV3) AddKeyGeneration(codec kbfscodec.Codec,
 				return nil, nil, err
 			}
 			expectedHistoricKeyCount :=
-				int(md.LatestKeyGeneration() - FirstValidKeyGen)
+				int(md.LatestKeyGeneration() - kbfsmd.FirstValidKeyGen)
 			if len(historicKeys) != expectedHistoricKeyCount {
 				return nil, nil, errors.Errorf(
 					"Expected %d historic keys, got %d",
@@ -1416,7 +1416,7 @@ func (md *BareRootMetadataV3) GetHistoricTLFCryptKey(crypto cryptoPure,
 		return kbfscrypto.TLFCryptKey{}, errors.New(
 			"Invalid extra metadata")
 	}
-	if keyGen < FirstValidKeyGen || keyGen >= md.LatestKeyGeneration() {
+	if keyGen < kbfsmd.FirstValidKeyGen || keyGen >= md.LatestKeyGeneration() {
 		return kbfscrypto.TLFCryptKey{}, errors.Errorf(
 			"Invalid key generation %d", keyGen)
 	}
@@ -1425,7 +1425,7 @@ func (md *BareRootMetadataV3) GetHistoricTLFCryptKey(crypto cryptoPure,
 	if err != nil {
 		return kbfscrypto.TLFCryptKey{}, err
 	}
-	index := int(keyGen - FirstValidKeyGen)
+	index := int(keyGen - kbfsmd.FirstValidKeyGen)
 	if index >= len(oldKeys) || index < 0 {
 		return kbfscrypto.TLFCryptKey{}, errors.Errorf(
 			"Index %d out of range (max: %d)", index, len(oldKeys))

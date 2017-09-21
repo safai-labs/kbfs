@@ -737,7 +737,7 @@ func checkGetTLFCryptKeyV2(t *testing.T, keyGen KeyGen,
 	expected expectedRekeyInfoV2,
 	expectedTLFCryptKey kbfscrypto.TLFCryptKey,
 	wkb *TLFWriterKeyBundleV2, rkb *TLFReaderKeyBundleV2) {
-	expectedServerHalves := expected.serverHalves[keyGen-FirstValidKeyGen]
+	expectedServerHalves := expected.serverHalves[keyGen-kbfsmd.FirstValidKeyGen]
 	for uid, privKeys := range expected.writerPrivKeys {
 		for privKey := range privKeys {
 			pubKey := privKey.GetPublicKey()
@@ -853,8 +853,8 @@ func checkKeyBundlesV2(t *testing.T, expectedRekeyInfos []expectedRekeyInfoV2,
 	expectedPubKeys []kbfscrypto.TLFPublicKey, rmd *BareRootMetadataV2) {
 	require.Equal(t, len(expectedTLFCryptKeys), len(expectedPubKeys))
 	require.Equal(t, len(expectedTLFCryptKeys),
-		int(rmd.LatestKeyGeneration()-FirstValidKeyGen+1))
-	for keyGen := FirstValidKeyGen; keyGen <= rmd.LatestKeyGeneration(); keyGen++ {
+		int(rmd.LatestKeyGeneration()-kbfsmd.FirstValidKeyGen+1))
+	for keyGen := kbfsmd.FirstValidKeyGen; keyGen <= rmd.LatestKeyGeneration(); keyGen++ {
 		wkb, rkb, err := rmd.getTLFKeyBundles(keyGen)
 		require.NoError(t, err)
 
@@ -899,7 +899,7 @@ func checkKeyBundlesV2(t *testing.T, expectedRekeyInfos []expectedRekeyInfoV2,
 		require.Equal(t, expectedReaderEPublicKeys,
 			rkb.TLFReaderEphemeralPublicKeys)
 
-		require.Equal(t, expectedPubKeys[keyGen-FirstValidKeyGen],
+		require.Equal(t, expectedPubKeys[keyGen-kbfsmd.FirstValidKeyGen],
 			wkb.TLFPublicKey)
 
 		for _, expected := range expectedRekeyInfos {
@@ -909,10 +909,10 @@ func checkKeyBundlesV2(t *testing.T, expectedRekeyInfos []expectedRekeyInfoV2,
 				expected.writerPrivKeys.toPublicKeys(),
 				expected.readerPrivKeys.toPublicKeys())
 			userPubKeys := userDeviceServerHalvesToPublicKeys(
-				expected.serverHalves[keyGen-FirstValidKeyGen])
+				expected.serverHalves[keyGen-kbfsmd.FirstValidKeyGen])
 			require.Equal(t, expectedUserPubKeys.RemoveKeylessUsersForTest(), userPubKeys)
 			checkGetTLFCryptKeyV2(t, keyGen, expected,
-				expectedTLFCryptKeys[keyGen-FirstValidKeyGen],
+				expectedTLFCryptKeys[keyGen-kbfsmd.FirstValidKeyGen],
 				wkb, rkb)
 		}
 	}
@@ -956,11 +956,11 @@ func TestBareRootMetadataV2UpdateKeyBundles(t *testing.T) {
 
 	// Add first key generations.
 
-	latestKeyGen := FirstValidKeyGen + 5
+	latestKeyGen := kbfsmd.FirstValidKeyGen + 5
 	var pubKeys []kbfscrypto.TLFPublicKey
 	var tlfCryptKeys []kbfscrypto.TLFCryptKey
 	var serverHalves1 []UserDeviceKeyServerHalves
-	for keyGen := FirstValidKeyGen; keyGen <= latestKeyGen; keyGen++ {
+	for keyGen := kbfsmd.FirstValidKeyGen; keyGen <= latestKeyGen; keyGen++ {
 		fakeKeyData := [32]byte{byte(keyGen)}
 		pubKey := kbfscrypto.MakeTLFPublicKey(fakeKeyData)
 		tlfCryptKey := kbfscrypto.MakeTLFCryptKey(fakeKeyData)

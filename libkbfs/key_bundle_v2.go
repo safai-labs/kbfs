@@ -243,13 +243,13 @@ func (wkg TLFWriterKeyGenerationsV2) ToTLFWriterKeyBundleV3(
 	tlfCryptKeyGetter func() ([]kbfscrypto.TLFCryptKey, error)) (
 	TLFWriterKeyBundleV2, TLFWriterKeyBundleV3, error) {
 	keyGen := wkg.LatestKeyGeneration()
-	if keyGen < FirstValidKeyGen {
+	if keyGen < kbfsmd.FirstValidKeyGen {
 		return TLFWriterKeyBundleV2{}, TLFWriterKeyBundleV3{},
 			errors.New("No key generations to convert")
 	}
 
 	// Copy the latest UserDeviceKeyInfoMap.
-	wkbV2 := wkg[keyGen-FirstValidKeyGen]
+	wkbV2 := wkg[keyGen-kbfsmd.FirstValidKeyGen]
 	ePubKeyCount := len(wkbV2.TLFEphemeralPublicKeys)
 	udkimV3, err := writerUDKIMV2ToV3(codec, wkbV2.WKeys, ePubKeyCount)
 	if err != nil {
@@ -264,7 +264,7 @@ func (wkg TLFWriterKeyGenerationsV2) ToTLFWriterKeyBundleV3(
 	// Copy all of the TLFEphemeralPublicKeys at this generation.
 	copy(wkbV3.TLFEphemeralPublicKeys[:], wkbV2.TLFEphemeralPublicKeys)
 
-	if keyGen > FirstValidKeyGen {
+	if keyGen > kbfsmd.FirstValidKeyGen {
 		// Fetch all of the TLFCryptKeys.
 		keys, err := tlfCryptKeyGetter()
 		if err != nil {
@@ -336,7 +336,7 @@ func (rkg TLFReaderKeyGenerationsV2) ToTLFReaderKeyBundleV3(
 	codec kbfscodec.Codec, wkb TLFWriterKeyBundleV2) (
 	TLFReaderKeyBundleV3, error) {
 	keyGen := rkg.LatestKeyGeneration()
-	if keyGen < FirstValidKeyGen {
+	if keyGen < kbfsmd.FirstValidKeyGen {
 		return TLFReaderKeyBundleV3{}, errors.New("No key generations to convert")
 	}
 
@@ -345,7 +345,7 @@ func (rkg TLFReaderKeyGenerationsV2) ToTLFReaderKeyBundleV3(
 	}
 
 	// Copy the latest UserDeviceKeyInfoMap.
-	rkb := rkg[keyGen-FirstValidKeyGen]
+	rkb := rkg[keyGen-kbfsmd.FirstValidKeyGen]
 
 	// Copy all of the TLFReaderEphemeralPublicKeys.
 	rkbV3.TLFEphemeralPublicKeys = make(kbfscrypto.TLFEphemeralPublicKeys,

@@ -13,6 +13,7 @@ import (
 	"github.com/keybase/client/go/logger"
 	"github.com/keybase/client/go/protocol/keybase1"
 	"github.com/keybase/kbfs/kbfscrypto"
+	"github.com/keybase/kbfs/kbfsmd"
 	"golang.org/x/net/context"
 )
 
@@ -496,7 +497,7 @@ func (k *KeybaseServiceBase) LoadTeamPlusKeys(
 		// If the cached team info doesn't satisfy our desires, don't
 		// use it.
 		satisfiesDesires := true
-		if desiredKeyGen >= FirstValidKeyGen {
+		if desiredKeyGen >= kbfsmd.FirstValidKeyGen {
 			// If `desiredKeyGen` is at most as large as the keygen in
 			// the cached latest team info, then our cached info
 			// satisfies our desires.
@@ -526,7 +527,7 @@ func (k *KeybaseServiceBase) LoadTeamPlusKeys(
 		Application: keybase1.TeamApplication_KBFS,
 	}
 
-	if desiredKeyGen >= FirstValidKeyGen {
+	if desiredKeyGen >= kbfsmd.FirstValidKeyGen {
 		arg.Refreshers.NeedKeyGeneration =
 			keybase1.PerTeamKeyGeneration(desiredKeyGen)
 	}
@@ -922,7 +923,7 @@ func (k *KeybaseServiceBase) GetTLFCryptKeys(ctx context.Context,
 
 	for i, key := range keys {
 		res.CryptKeys = append(res.CryptKeys, keybase1.CryptKey{
-			KeyGeneration: int(FirstValidKeyGen) + i,
+			KeyGeneration: int(kbfsmd.FirstValidKeyGen) + i,
 			Key:           keybase1.Bytes32(key.Data()),
 		})
 	}

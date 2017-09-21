@@ -273,7 +273,7 @@ func (md *RootMetadata) MakeSuccessor(
 				return nil, err
 			}
 			_, keyGen, err := teamKeyer.GetTeamTLFCryptKeys(
-				ctx, tid, UnspecifiedKeyGen)
+				ctx, tid, kbfsmd.UnspecifiedKeyGen)
 			if err != nil {
 				return nil, err
 			}
@@ -325,10 +325,10 @@ func (md *RootMetadata) MakeBareTlfHandle() (tlf.Handle, error) {
 func (md *RootMetadata) IsInitialized() bool {
 	keyGen := md.LatestKeyGeneration()
 	if md.TlfID().Type() == tlf.Public {
-		return keyGen == PublicKeyGen
+		return keyGen == kbfsmd.PublicKeyGen
 	}
 	// The data is only initialized once we have at least one set of keys
-	return keyGen >= FirstValidKeyGen
+	return keyGen >= kbfsmd.FirstValidKeyGen
 }
 
 // AddRefBlock adds the newly-referenced block to the add block change list.

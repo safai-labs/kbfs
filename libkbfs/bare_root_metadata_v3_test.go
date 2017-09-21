@@ -514,12 +514,12 @@ func TestBareRootMetadataV3UpdateKeyBundles(t *testing.T) {
 	// Add first key generations, although only the last one
 	// matters.
 
-	latestKeyGen := FirstValidKeyGen + 5
+	latestKeyGen := kbfsmd.FirstValidKeyGen + 5
 	var pubKey kbfscrypto.TLFPublicKey
 	var tlfCryptKey kbfscrypto.TLFCryptKey
 	var extra ExtraMetadata
 	var serverHalves1 UserDeviceKeyServerHalves
-	for keyGen := FirstValidKeyGen; keyGen <= latestKeyGen; keyGen++ {
+	for keyGen := kbfsmd.FirstValidKeyGen; keyGen <= latestKeyGen; keyGen++ {
 		fakeKeyData := [32]byte{byte(keyGen)}
 		pubKey = kbfscrypto.MakeTLFPublicKey(fakeKeyData)
 		nextTLFCryptKey := kbfscrypto.MakeTLFCryptKey(fakeKeyData)

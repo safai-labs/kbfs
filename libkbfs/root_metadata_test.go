@@ -182,8 +182,8 @@ func testRootMetadataLatestKeyGenerationPrivate(t *testing.T, ver MetadataVer) {
 		t.Errorf("Expected key generation to be invalid (0)")
 	}
 	rmd.fakeInitialRekey()
-	if rmd.LatestKeyGeneration() != FirstValidKeyGen {
-		t.Errorf("Expected key generation to be valid(%d)", FirstValidKeyGen)
+	if rmd.LatestKeyGeneration() != kbfsmd.FirstValidKeyGen {
+		t.Errorf("Expected key generation to be valid(%d)", kbfsmd.FirstValidKeyGen)
 	}
 }
 
@@ -194,8 +194,8 @@ func testRootMetadataLatestKeyGenerationPublic(t *testing.T, ver MetadataVer) {
 	rmd, err := makeInitialRootMetadata(ver, tlfID, h)
 	require.NoError(t, err)
 
-	if rmd.LatestKeyGeneration() != PublicKeyGen {
-		t.Errorf("Expected key generation to be public (%d)", PublicKeyGen)
+	if rmd.LatestKeyGeneration() != kbfsmd.PublicKeyGen {
+		t.Errorf("Expected key generation to be public (%d)", kbfsmd.PublicKeyGen)
 	}
 }
 
@@ -279,7 +279,7 @@ func testRootMetadataFinalIsFinal(t *testing.T, ver MetadataVer) {
 func getAllUsersKeysForTest(
 	t *testing.T, config Config, rmd *RootMetadata, un string) []kbfscrypto.TLFCryptKey {
 	var keys []kbfscrypto.TLFCryptKey
-	for keyGen := FirstValidKeyGen; keyGen <= rmd.LatestKeyGeneration(); keyGen++ {
+	for keyGen := kbfsmd.FirstValidKeyGen; keyGen <= rmd.LatestKeyGeneration(); keyGen++ {
 		key, err := config.KeyManager().(*KeyManagerStandard).getTLFCryptKeyUsingCurrentDevice(
 			context.Background(), rmd, keyGen, true)
 		require.NoError(t, err)
@@ -469,7 +469,7 @@ func TestRootMetadataUpconversionPublic(t *testing.T) {
 		t, config, "alice,bob,charlie@twitter", tlf.Public)
 	rmd, err := makeInitialRootMetadata(kbfsmd.InitialExtraMetadataVer, tlfID, h)
 	require.NoError(t, err)
-	require.Equal(t, PublicKeyGen, rmd.LatestKeyGeneration())
+	require.Equal(t, kbfsmd.PublicKeyGen, rmd.LatestKeyGeneration())
 	require.Equal(t, kbfsmd.Revision(1), rmd.Revision())
 	require.Equal(t, kbfsmd.InitialExtraMetadataVer, rmd.Version())
 
@@ -488,7 +488,7 @@ func TestRootMetadataUpconversionPublic(t *testing.T) {
 		config.KeyManager(), config.KBPKI(), config.KBPKI(), kbfsmd.FakeID(1),
 		true)
 	require.NoError(t, err)
-	require.Equal(t, PublicKeyGen, rmd2.LatestKeyGeneration())
+	require.Equal(t, kbfsmd.PublicKeyGen, rmd2.LatestKeyGeneration())
 	require.Equal(t, kbfsmd.Revision(2), rmd2.Revision())
 	require.Equal(t, kbfsmd.SegregatedKeyBundlesVer, rmd2.Version())
 	// Do this instead of require.Nil because we want to assert
@@ -810,7 +810,7 @@ func TestRootMetadataTeamMakeSuccessor(t *testing.T) {
 	rmd.data.Dir.BlockPointer = BlockPointer{ID: kbfsblock.FakeID(1)}
 
 	firstKeyGen := rmd.LatestKeyGeneration()
-	require.Equal(t, FirstValidKeyGen, firstKeyGen)
+	require.Equal(t, kbfsmd.FirstValidKeyGen, firstKeyGen)
 
 	rmd2, err := rmd.MakeSuccessor(context.Background(),
 		config.MetadataVersion(), config.Codec(), config.Crypto(),

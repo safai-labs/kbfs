@@ -80,7 +80,7 @@ func (wmdV2 *WriterMetadataV2) ToWriterMetadataV3() WriterMetadataV3 {
 	wmdV3.MDRefBytes = wmdV2.MDRefBytes
 
 	if wmdV2.ID.Type() == tlf.Public {
-		wmdV3.LatestKeyGen = PublicKeyGen
+		wmdV3.LatestKeyGen = kbfsmd.PublicKeyGen
 	} else {
 		wmdV3.LatestKeyGen = wmdV2.WKeys.LatestKeyGeneration()
 	}
@@ -199,18 +199,18 @@ func (md *BareRootMetadataV2) TlfID() tlf.ID {
 // for BareRootMetadataV2.
 func (md *BareRootMetadataV2) KeyGenerationsToUpdate() (KeyGen, KeyGen) {
 	latest := md.LatestKeyGeneration()
-	if latest < FirstValidKeyGen {
+	if latest < kbfsmd.FirstValidKeyGen {
 		return 0, 0
 	}
 	// We keep track of all known key generations.
-	return FirstValidKeyGen, latest + 1
+	return kbfsmd.FirstValidKeyGen, latest + 1
 }
 
 // LatestKeyGeneration implements the BareRootMetadata interface for
 // BareRootMetadataV2.
 func (md *BareRootMetadataV2) LatestKeyGeneration() KeyGen {
 	if md.ID.Type() == tlf.Public {
-		return PublicKeyGen
+		return kbfsmd.PublicKeyGen
 	}
 	return md.WKeys.LatestKeyGeneration()
 }
@@ -408,7 +408,7 @@ func (md *BareRootMetadataV2) makeSuccessorCopyV3(
 	// Have this as ExtraMetadata so we return an untyped nil
 	// instead of a typed nil.
 	var extraCopy ExtraMetadata
-	if md.LatestKeyGeneration() != PublicKeyGen {
+	if md.LatestKeyGeneration() != kbfsmd.PublicKeyGen {
 		// Fill out the writer key bundle.
 		wkbV2, wkbV3, err := md.WKeys.ToTLFWriterKeyBundleV3(
 			codec, crypto, tlfCryptKeyGetter)
@@ -633,7 +633,7 @@ func (md *BareRootMetadataV2) PromoteReaders(
 			dkim, ok := rkb.RKeys[reader]
 			if !ok {
 				return fmt.Errorf("Could not find %s in key gen %d",
-					reader, FirstValidKeyGen+KeyGen(i))
+					reader, kbfsmd.FirstValidKeyGen+KeyGen(i))
 			}
 			// TODO: This may be incorrect, since dkim may
 			// contain negative EPubKey indices, and the
@@ -698,10 +698,10 @@ func (md *BareRootMetadataV2) getTLFKeyBundles(keyGen KeyGen) (
 		return nil, nil, InvalidNonPrivateTLFOperation{md.ID, "getTLFKeyBundles", md.Version()}
 	}
 
-	if keyGen < FirstValidKeyGen {
+	if keyGen < kbfsmd.FirstValidKeyGen {
 		return nil, nil, InvalidKeyGenerationError{md.ID, keyGen}
 	}
-	i := int(keyGen - FirstValidKeyGen)
+	i := int(keyGen - kbfsmd.FirstValidKeyGen)
 	if i >= len(md.WKeys) || i >= len(md.RKeys) {
 		return nil, nil, NewKeyGenerationError{md.ID, keyGen}
 	}
@@ -1326,7 +1326,7 @@ func (md *BareRootMetadataV2) UpdateKeyBundles(crypto cryptoPure,
 	}
 
 	expectedTLFCryptKeyCount := int(
-		md.LatestKeyGeneration() - FirstValidKeyGen + 1)
+		md.LatestKeyGeneration() - kbfsmd.FirstValidKeyGen + 1)
 	if len(tlfCryptKeys) != expectedTLFCryptKeyCount {
 		return nil, fmt.Errorf(
 			"(MDv2) Expected %d TLF crypt keys, got %d",
@@ -1337,17 +1337,17 @@ func (md *BareRootMetadataV2) UpdateKeyBundles(crypto cryptoPure,
 	if len(updatedWriterKeys) == 0 {
 		// Reader rekey case.
 
-		for keyGen := FirstValidKeyGen; keyGen <= md.LatestKeyGeneration(); keyGen++ {
+		for keyGen := kbfsmd.FirstValidKeyGen; keyGen <= md.LatestKeyGeneration(); keyGen++ {
 			serverHalvesGen, err :=
 				md.updateKeyGenerationForReaderRekey(crypto,
 					keyGen, updatedReaderKeys,
 					ePubKey, ePrivKey,
-					tlfCryptKeys[keyGen-FirstValidKeyGen])
+					tlfCryptKeys[keyGen-kbfsmd.FirstValidKeyGen])
 			if err != nil {
 				return nil, err
 			}
 
-			serverHalves[keyGen-FirstValidKeyGen] = serverHalvesGen
+			serverHalves[keyGen-kbfsmd.FirstValidKeyGen] = serverHalvesGen
 		}
 
 		return serverHalves, nil
@@ -1355,16 +1355,16 @@ func (md *BareRootMetadataV2) UpdateKeyBundles(crypto cryptoPure,
 
 	// Usual rekey case.
 
-	for keyGen := FirstValidKeyGen; keyGen <= md.LatestKeyGeneration(); keyGen++ {
+	for keyGen := kbfsmd.FirstValidKeyGen; keyGen <= md.LatestKeyGeneration(); keyGen++ {
 		serverHalvesGen, err := md.updateKeyGeneration(
 			crypto, keyGen, updatedWriterKeys, updatedReaderKeys,
 			ePubKey, ePrivKey,
-			tlfCryptKeys[keyGen-FirstValidKeyGen])
+			tlfCryptKeys[keyGen-kbfsmd.FirstValidKeyGen])
 		if err != nil {
 			return nil, err
 		}
 
-		serverHalves[keyGen-FirstValidKeyGen] = serverHalvesGen
+		serverHalves[keyGen-kbfsmd.FirstValidKeyGen] = serverHalvesGen
 	}
 	return serverHalves, nil
 

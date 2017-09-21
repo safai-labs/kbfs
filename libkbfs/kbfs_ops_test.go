@@ -342,7 +342,7 @@ func injectNewRMD(t *testing.T, config *ConfigMock) (
 	id, h, rmd := createNewRMD(t, config, "alice", tlf.Private)
 	var keyGen KeyGen
 	if id.Type() == tlf.Public {
-		keyGen = PublicKeyGen
+		keyGen = kbfsmd.PublicKeyGen
 	} else {
 		keyGen = 1
 	}
