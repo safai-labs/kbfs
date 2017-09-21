@@ -768,7 +768,7 @@ func validatePutPublicRMDS(
 	// Overwrite written fields.
 	expectedRmd.SetLastModifyingWriter(rmds.MD.LastModifyingWriter())
 	expectedRmd.SetLastModifyingUser(rmds.MD.GetLastModifyingUser())
-	if ver < SegregatedKeyBundlesVer {
+	if ver < kbfsmd.SegregatedKeyBundlesVer {
 		expectedRmd.(*BareRootMetadataV2).WriterMetadataSigInfo =
 			rmds.MD.(*BareRootMetadataV2).WriterMetadataSigInfo
 	}

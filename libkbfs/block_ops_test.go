@@ -247,7 +247,7 @@ func (c tooSmallBlockEncryptor) EncryptBlock(
 	if err != nil {
 		return 0, EncryptedBlock{}, err
 	}
-	encryptedBlock.EncryptedData = nil
+	encryptedBlock.Data = nil
 	return plainSize, encryptedBlock, nil
 }
 

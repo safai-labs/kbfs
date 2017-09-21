@@ -2370,7 +2370,7 @@ func TestKeyManagerGetTeamTLFCryptKey(t *testing.T) {
 		name: CanonicalTlfName(name),
 	}
 
-	rmd, err := makeInitialRootMetadata(SegregatedKeyBundlesVer, tlfID, h)
+	rmd, err := makeInitialRootMetadata(kbfsmd.SegregatedKeyBundlesVer, tlfID, h)
 	require.NoError(t, err)
 	rmd.bareMd.SetLatestKeyGenerationForTeamTLF(teamInfos[0].LatestKeyGen)
 	// Make sure the MD looks readable.

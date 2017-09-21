@@ -87,10 +87,10 @@ func (fc FakeCryptoClient) Call(ctx context.Context, s string, args interface{},
 		publicKey := kbfscrypto.MakeTLFEphemeralPublicKey(
 			arg.PeersPublicKey)
 		encryptedClientHalf := EncryptedTLFCryptKeyClientHalf{
-			encryptedData{
-				Version:       EncryptionSecretbox,
-				EncryptedData: arg.EncryptedBytes32[:],
-				Nonce:         arg.Nonce[:],
+			kbfscrypto.EncryptedData{
+				Version: kbfscrypto.EncryptionSecretbox,
+				Data:    arg.EncryptedBytes32[:],
+				Nonce:   arg.Nonce[:],
 			},
 		}
 		clientHalf, err := fc.Local.DecryptTLFCryptKeyClientHalf(
@@ -112,13 +112,13 @@ func (fc FakeCryptoClient) Call(ctx context.Context, s string, args interface{},
 			ePublicKey := kbfscrypto.MakeTLFEphemeralPublicKey(
 				k.PublicKey)
 			encryptedClientHalf := EncryptedTLFCryptKeyClientHalf{
-				encryptedData{
-					Version:       EncryptionSecretbox,
-					EncryptedData: make([]byte, len(k.Ciphertext)),
-					Nonce:         make([]byte, len(k.Nonce)),
+				kbfscrypto.EncryptedData{
+					Version: kbfscrypto.EncryptionSecretbox,
+					Data:    make([]byte, len(k.Ciphertext)),
+					Nonce:   make([]byte, len(k.Nonce)),
 				},
 			}
-			copy(encryptedClientHalf.EncryptedData, k.Ciphertext[:])
+			copy(encryptedClientHalf.Data, k.Ciphertext[:])
 			copy(encryptedClientHalf.Nonce, k.Nonce[:])
 			keys = append(keys, EncryptedTLFCryptKeyClientAndEphemeral{
 				EPubKey:    ePublicKey,
@@ -213,10 +213,10 @@ func TestCryptoClientDecryptTLFCryptKeyClientHalfBoxSeal(t *testing.T) {
 	ephPrivateKeyData := ephPrivateKey.Data()
 	encryptedBytes := box.Seal(nil, clientHalfData[:], &nonce, (*[32]byte)(&dhKeyPair.Public), &ephPrivateKeyData)
 	encryptedClientHalf := EncryptedTLFCryptKeyClientHalf{
-		encryptedData{
-			Version:       EncryptionSecretbox,
-			Nonce:         nonce[:],
-			EncryptedData: encryptedBytes,
+		kbfscrypto.EncryptedData{
+			Version: kbfscrypto.EncryptionSecretbox,
+			Nonce:   nonce[:],
+			Data:    encryptedBytes,
 		},
 	}
 
@@ -251,7 +251,7 @@ func TestCryptoClientDecryptEncryptedTLFCryptKeyClientHalf(t *testing.T) {
 	// performs encryption.
 	encryptedClientHalf, err := c.EncryptTLFCryptKeyClientHalf(ephPrivateKey, cryptPrivateKey.GetPublicKey(), clientHalf)
 	require.NoError(t, err)
-	require.Equal(t, EncryptionSecretbox, encryptedClientHalf.Version)
+	require.Equal(t, kbfscrypto.EncryptionSecretbox, encryptedClientHalf.Version)
 
 	decryptedClientHalf, err := c.DecryptTLFCryptKeyClientHalf(
 		context.Background(), ephPublicKey, encryptedClientHalf)
@@ -304,7 +304,7 @@ func TestCryptoClientDecryptEncryptedTLFCryptKeyClientHalfAny(t *testing.T) {
 		// performs encryption.
 		encryptedClientHalf, err := c.EncryptTLFCryptKeyClientHalf(ephPrivateKey, cryptPrivateKey.GetPublicKey(), clientHalf)
 		require.NoError(t, err)
-		require.Equal(t, EncryptionSecretbox,
+		require.Equal(t, kbfscrypto.EncryptionSecretbox,
 			encryptedClientHalf.Version)
 		keys = append(keys, EncryptedTLFCryptKeyClientAndEphemeral{
 			PubKey:     cryptPrivateKey.GetPublicKey(),
@@ -351,7 +351,7 @@ func TestCryptoClientDecryptTLFCryptKeyClientHalfAnyFailures(t *testing.T) {
 
 	// Wrong sizes.
 	encryptedClientHalfWrongSize := encryptedClientHalf
-	encryptedClientHalfWrongSize.EncryptedData = encryptedClientHalfWrongSize.EncryptedData[:len(encryptedClientHalfWrongSize.EncryptedData)-1]
+	encryptedClientHalfWrongSize.Data = encryptedClientHalfWrongSize.Data[:len(encryptedClientHalfWrongSize.Data)-1]
 
 	encryptedClientHalfWrongNonceSize := encryptedClientHalf
 	encryptedClientHalfWrongNonceSize.Nonce = encryptedClientHalfWrongNonceSize.Nonce[:len(encryptedClientHalfWrongNonceSize.Nonce)-1]
@@ -364,9 +364,9 @@ func TestCryptoClientDecryptTLFCryptKeyClientHalfAnyFailures(t *testing.T) {
 
 	// Corrupt data.
 	encryptedClientHalfCorruptData := encryptedClientHalf
-	encryptedClientHalfCorruptData.EncryptedData = make([]byte, len(encryptedClientHalf.EncryptedData))
-	copy(encryptedClientHalfCorruptData.EncryptedData, encryptedClientHalf.EncryptedData)
-	encryptedClientHalfCorruptData.EncryptedData[0] = ^encryptedClientHalfCorruptData.EncryptedData[0]
+	encryptedClientHalfCorruptData.Data = make([]byte, len(encryptedClientHalf.Data))
+	copy(encryptedClientHalfCorruptData.Data, encryptedClientHalf.Data)
+	encryptedClientHalfCorruptData.Data[0] = ^encryptedClientHalfCorruptData.Data[0]
 
 	keys := []EncryptedTLFCryptKeyClientAndEphemeral{
 		{
@@ -433,19 +433,19 @@ func TestCryptoClientDecryptTLFCryptKeyClientHalfFailures(t *testing.T) {
 	_, err = c.DecryptTLFCryptKeyClientHalf(ctx, ephPublicKey,
 		encryptedClientHalfWrongVersion)
 	assert.Equal(t,
-		UnknownEncryptionVer{encryptedClientHalfWrongVersion.Version},
+		kbfscrypto.UnknownEncryptionVer{Ver: encryptedClientHalfWrongVersion.Version},
 		errors.Cause(err))
 
 	// Wrong sizes.
 
 	encryptedClientHalfWrongSize := encryptedClientHalf
-	encryptedClientHalfWrongSize.EncryptedData = encryptedClientHalfWrongSize.EncryptedData[:len(encryptedClientHalfWrongSize.EncryptedData)-1]
+	encryptedClientHalfWrongSize.Data = encryptedClientHalfWrongSize.Data[:len(encryptedClientHalfWrongSize.Data)-1]
 	_, err = c.DecryptTLFCryptKeyClientHalf(ctx, ephPublicKey,
 		encryptedClientHalfWrongSize)
 	assert.EqualError(t, errors.Cause(err),
 		fmt.Sprintf("Expected %d bytes, got %d",
-			len(encryptedClientHalf.EncryptedData),
-			len(encryptedClientHalfWrongSize.EncryptedData)))
+			len(encryptedClientHalf.Data),
+			len(encryptedClientHalfWrongSize.Data)))
 
 	encryptedClientHalfWrongNonceSize := encryptedClientHalf
 	encryptedClientHalfWrongNonceSize.Nonce = encryptedClientHalfWrongNonceSize.Nonce[:len(encryptedClientHalfWrongNonceSize.Nonce)-1]
@@ -468,7 +468,7 @@ func TestCryptoClientDecryptTLFCryptKeyClientHalfFailures(t *testing.T) {
 	// Corrupt data.
 
 	encryptedClientHalfCorruptData := encryptedClientHalf
-	encryptedClientHalfCorruptData.EncryptedData[0] = ^encryptedClientHalfCorruptData.EncryptedData[0]
+	encryptedClientHalfCorruptData.Data[0] = ^encryptedClientHalfCorruptData.Data[0]
 	_, err = c.DecryptTLFCryptKeyClientHalf(ctx, ephPublicKey,
 		encryptedClientHalfCorruptData)
 	assert.Equal(t, libkb.DecryptionError{}, errors.Cause(err))

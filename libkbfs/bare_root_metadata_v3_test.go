@@ -10,6 +10,7 @@ import (
 	"github.com/keybase/client/go/protocol/keybase1"
 	"github.com/keybase/kbfs/kbfscodec"
 	"github.com/keybase/kbfs/kbfscrypto"
+	"github.com/keybase/kbfs/kbfsmd"
 	"github.com/keybase/kbfs/tlf"
 	"github.com/stretchr/testify/require"
 )
@@ -27,7 +28,7 @@ func TestBareRootMetadataVersionV3(t *testing.T) {
 	rmd, err := MakeInitialBareRootMetadataV3(tlfID, bh)
 	require.NoError(t, err)
 
-	require.Equal(t, SegregatedKeyBundlesVer, rmd.Version())
+	require.Equal(t, kbfsmd.SegregatedKeyBundlesVer, rmd.Version())
 }
 
 func TestRootMetadataV3ExtraNew(t *testing.T) {
@@ -113,7 +114,7 @@ func TestBareRootMetadataPublicVersionV3(t *testing.T) {
 
 	rmd, err := MakeInitialBareRootMetadataV3(tlfID, bh)
 	require.NoError(t, err)
-	require.Equal(t, SegregatedKeyBundlesVer, rmd.Version())
+	require.Equal(t, kbfsmd.SegregatedKeyBundlesVer, rmd.Version())
 
 	bh2, err := rmd.MakeBareTlfHandle(nil)
 	require.Equal(t, bh, bh2)
@@ -129,7 +130,7 @@ func TestBareRootMetadataSingleTeamVersionV3(t *testing.T) {
 
 	rmd, err := MakeInitialBareRootMetadataV3(tlfID, bh)
 	require.NoError(t, err)
-	require.Equal(t, SegregatedKeyBundlesVer, rmd.Version())
+	require.Equal(t, kbfsmd.SegregatedKeyBundlesVer, rmd.Version())
 
 	bh2, err := rmd.MakeBareTlfHandle(nil)
 	require.Equal(t, bh, bh2)

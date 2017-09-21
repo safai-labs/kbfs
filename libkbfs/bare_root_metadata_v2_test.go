@@ -35,22 +35,22 @@ func TestBareRootMetadataVersionV2(t *testing.T) {
 	rmd, err := MakeInitialBareRootMetadataV2(tlfID, bh)
 	require.NoError(t, err)
 
-	require.Equal(t, InitialExtraMetadataVer, rmd.Version())
+	require.Equal(t, kbfsmd.InitialExtraMetadataVer, rmd.Version())
 
 	// All other folders should use PreExtraMetadataVer.
 	bh2, err := tlf.MakeHandle([]keybase1.UserOrTeamID{uid.AsUserOrTeam()}, nil, nil, nil, nil)
 	require.NoError(t, err)
 
 	rmd2, err := MakeInitialBareRootMetadata(
-		InitialExtraMetadataVer, tlfID, bh2)
+		kbfsmd.InitialExtraMetadataVer, tlfID, bh2)
 	require.NoError(t, err)
 
-	require.Equal(t, PreExtraMetadataVer, rmd2.Version())
+	require.Equal(t, kbfsmd.PreExtraMetadataVer, rmd2.Version())
 
 	// ... including if unresolved assertions get resolved.
 
 	rmd.SetUnresolvedWriters(nil)
-	require.Equal(t, PreExtraMetadataVer, rmd.Version())
+	require.Equal(t, kbfsmd.PreExtraMetadataVer, rmd.Version())
 }
 
 // Test that old encoded WriterMetadataV2 objects (i.e., without any

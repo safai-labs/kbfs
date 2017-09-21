@@ -163,7 +163,7 @@ func newChainMDForTest(t *testing.T) rootMetadataWithKeyAndTimestamp {
 	h, err := MakeTlfHandle(ctx, bh, nug)
 	require.NoError(t, err)
 
-	rmd, err := makeInitialRootMetadata(defaultClientMetadataVer, tlfID, h)
+	rmd, err := makeInitialRootMetadata(kbfsmd.DefaultClientMetadataVer, tlfID, h)
 	require.NoError(t, err)
 	rmd.SetLastModifyingWriter(uid)
 	key := kbfscrypto.MakeFakeVerifyingKeyOrBust("fake key")

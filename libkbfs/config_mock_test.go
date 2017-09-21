@@ -10,6 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/keybase/client/go/logger"
 	"github.com/keybase/kbfs/kbfscodec"
+	"github.com/keybase/kbfs/kbfsmd"
 	"golang.org/x/net/context"
 )
 
@@ -135,7 +136,7 @@ func NewConfigMock(c *gomock.Controller, ctr *SafeTestReporter) *ConfigMock {
 
 	config.qrPeriod = 0 * time.Second // no auto reclamation
 	config.qrUnrefAge = qrUnrefAgeDefault
-	config.SetMetadataVersion(defaultClientMetadataVer)
+	config.SetMetadataVersion(kbfsmd.DefaultClientMetadataVer)
 
 	return config
 }

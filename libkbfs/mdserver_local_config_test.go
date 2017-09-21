@@ -7,6 +7,7 @@ package libkbfs
 import (
 	"testing"
 
+	"github.com/keybase/kbfs/kbfsmd"
 	"golang.org/x/net/context"
 )
 
@@ -52,7 +53,7 @@ func (c testMDServerLocalConfig) currentSessionGetter() CurrentSessionGetter {
 }
 
 func (c testMDServerLocalConfig) MetadataVersion() MetadataVer {
-	return defaultClientMetadataVer
+	return kbfsmd.DefaultClientMetadataVer
 }
 
 func (c testMDServerLocalConfig) teamMembershipChecker() TeamMembershipChecker {
