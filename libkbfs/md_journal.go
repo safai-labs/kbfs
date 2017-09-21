@@ -356,7 +356,7 @@ func (j mdJournal) getExtraMetadata(
 		return nil, err
 	}
 
-	return NewExtraMetadataV3(wkb, rkb, wkbNew, rkbNew), nil
+	return kbfsmd.NewExtraMetadataV3(wkb, rkb, wkbNew, rkbNew), nil
 }
 
 func (j mdJournal) putExtraMetadata(rmd BareRootMetadata, extra ExtraMetadata) (
@@ -391,29 +391,29 @@ func (j mdJournal) putExtraMetadata(rmd BareRootMetadata, extra ExtraMetadata) (
 	// it as part of the mdInfo, so we don't needlessly send it
 	// while flushing.
 
-	err = checkWKBID(j.crypto, wkbID, extraV3.wkb)
+	err = checkWKBID(j.crypto, wkbID, extraV3.Wkb)
 	if err != nil {
 		return false, false, err
 	}
 
-	err = checkRKBID(j.crypto, rkbID, extraV3.rkb)
-	if err != nil {
-		return false, false, err
-	}
-
-	err = kbfscodec.SerializeToFileIfNotExist(
-		j.codec, extraV3.wkb, j.writerKeyBundleV3Path(wkbID))
+	err = checkRKBID(j.crypto, rkbID, extraV3.Rkb)
 	if err != nil {
 		return false, false, err
 	}
 
 	err = kbfscodec.SerializeToFileIfNotExist(
-		j.codec, extraV3.rkb, j.readerKeyBundleV3Path(rkbID))
+		j.codec, extraV3.Wkb, j.writerKeyBundleV3Path(wkbID))
 	if err != nil {
 		return false, false, err
 	}
 
-	return extraV3.wkbNew, extraV3.rkbNew, nil
+	err = kbfscodec.SerializeToFileIfNotExist(
+		j.codec, extraV3.Rkb, j.readerKeyBundleV3Path(rkbID))
+	if err != nil {
+		return false, false, err
+	}
+
+	return extraV3.WkbNew, extraV3.RkbNew, nil
 }
 
 // getMDAndExtra verifies the MD data, the writer signature (but not

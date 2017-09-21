@@ -123,73 +123,7 @@ func makeMissingKeyBundlesError() missingKeyBundlesError {
 	return missingKeyBundlesError{stack[:n]}
 }
 
-// ExtraMetadataV3 contains references to key bundles stored outside of metadata
-// blocks.  This only ever exists in memory and is never serialized itself.
-type ExtraMetadataV3 struct {
-	wkb TLFWriterKeyBundleV3
-	rkb TLFReaderKeyBundleV3
-	// Set if wkb is new and should be sent to the server on an MD
-	// put.
-	wkbNew bool
-	// Set if rkb is new and should be sent to the server on an MD
-	// put.
-	rkbNew bool
-}
-
-// NewExtraMetadataV3 creates a new ExtraMetadataV3 given a pair of key bundles
-func NewExtraMetadataV3(
-	wkb TLFWriterKeyBundleV3, rkb TLFReaderKeyBundleV3,
-	wkbNew, rkbNew bool) *ExtraMetadataV3 {
-	return &ExtraMetadataV3{wkb, rkb, wkbNew, rkbNew}
-}
-
-// MetadataVersion implements the ExtraMetadata interface for ExtraMetadataV3.
-func (extra ExtraMetadataV3) MetadataVersion() MetadataVer {
-	return kbfsmd.SegregatedKeyBundlesVer
-}
-
-func (extra *ExtraMetadataV3) updateNew(wkbNew, rkbNew bool) {
-	extra.wkbNew = extra.wkbNew || wkbNew
-	extra.rkbNew = extra.rkbNew || rkbNew
-}
-
-// DeepCopy implements the ExtraMetadata interface for ExtraMetadataV3.
-func (extra ExtraMetadataV3) DeepCopy(codec kbfscodec.Codec) (
-	ExtraMetadata, error) {
-	wkb, err := extra.wkb.DeepCopy(codec)
-	if err != nil {
-		return nil, err
-	}
-	rkb, err := extra.rkb.DeepCopy(codec)
-	if err != nil {
-		return nil, err
-	}
-	return NewExtraMetadataV3(wkb, rkb, extra.wkbNew, extra.rkbNew), nil
-}
-
-// MakeSuccessorCopy implements the ExtraMetadata interface for ExtraMetadataV3.
-func (extra ExtraMetadataV3) MakeSuccessorCopy(codec kbfscodec.Codec) (
-	ExtraMetadata, error) {
-	wkb, err := extra.wkb.DeepCopy(codec)
-	if err != nil {
-		return nil, err
-	}
-	rkb, err := extra.rkb.DeepCopy(codec)
-	if err != nil {
-		return nil, err
-	}
-	return NewExtraMetadataV3(wkb, rkb, false, false), nil
-}
-
-// GetWriterKeyBundle returns the contained writer key bundle.
-func (extra ExtraMetadataV3) GetWriterKeyBundle() TLFWriterKeyBundleV3 {
-	return extra.wkb
-}
-
-// GetReaderKeyBundle returns the contained reader key bundle.
-func (extra ExtraMetadataV3) GetReaderKeyBundle() TLFReaderKeyBundleV3 {
-	return extra.rkb
-}
+type ExtraMetadataV3 = kbfsmd.ExtraMetadataV3
 
 // MakeInitialBareRootMetadataV3 creates a new BareRootMetadataV3
 // object with revision kbfsmd.RevisionInitial, and the given TLF ID
@@ -313,7 +247,7 @@ func (md *BareRootMetadataV3) IsValidRekeyRequest(
 		return false, nil
 	}
 	onlyUserRKeysChanged, err := md.haveOnlyUserRKeysChanged(
-		codec, prevMd, user, prevExtraV3.rkb, extraV3.rkb)
+		codec, prevMd, user, prevExtraV3.Rkb, extraV3.Rkb)
 	if err != nil {
 		return false, err
 	}
@@ -377,7 +311,7 @@ func (md *BareRootMetadataV3) getTLFKeyBundles(extra ExtraMetadata) (
 			"Expected *ExtraMetadataV3, got %T", extra)
 	}
 
-	return &extraV3.wkb, &extraV3.rkb, nil
+	return &extraV3.Wkb, &extraV3.Rkb, nil
 }
 
 func (md *BareRootMetadataV3) isNonTeamWriter(
@@ -1267,14 +1201,14 @@ func (md *BareRootMetadataV3) AddKeyGeneration(codec kbfscodec.Codec,
 			return nil, nil, errors.New("Invalid curr extra metadata")
 		}
 
-		existingWriterKeys := currExtraV3.wkb.Keys.ToPublicKeys()
+		existingWriterKeys := currExtraV3.Wkb.Keys.ToPublicKeys()
 		if !existingWriterKeys.Equals(updatedWriterKeys) {
 			return nil, nil, fmt.Errorf(
 				"existingWriterKeys=%+v != updatedWriterKeys=%+v",
 				existingWriterKeys, updatedWriterKeys)
 		}
 
-		existingReaderKeys := currExtraV3.rkb.Keys.ToPublicKeys()
+		existingReaderKeys := currExtraV3.Rkb.Keys.ToPublicKeys()
 		if !existingReaderKeys.Equals(updatedReaderKeys) {
 			return nil, nil, fmt.Errorf(
 				"existingReaderKeys=%+v != updatedReaderKeys=%+v",
@@ -1289,7 +1223,7 @@ func (md *BareRootMetadataV3) AddKeyGeneration(codec kbfscodec.Codec,
 		if latestKeyGen > FirstValidKeyGen {
 			var err error
 			historicKeys, err = crypto.DecryptTLFCryptKeys(
-				currExtraV3.wkb.EncryptedHistoricTLFCryptKeys,
+				currExtraV3.Wkb.EncryptedHistoricTLFCryptKeys,
 				currCryptKey)
 			if err != nil {
 				return nil, nil, err
@@ -1321,7 +1255,7 @@ func (md *BareRootMetadataV3) AddKeyGeneration(codec kbfscodec.Codec,
 		Keys: make(UserDeviceKeyInfoMapV3),
 	}
 	md.WriterMetadata.LatestKeyGen++
-	nextExtra = NewExtraMetadataV3(newWriterKeys, newReaderKeys, true, true)
+	nextExtra = kbfsmd.NewExtraMetadataV3(newWriterKeys, newReaderKeys, true, true)
 
 	serverHalves, err = md.updateKeyBundles(crypto, nextExtra,
 		updatedWriterKeys, updatedReaderKeys,
@@ -1451,11 +1385,11 @@ func (md *BareRootMetadataV3) FinalizeRekey(
 	oldWKBID := md.WriterMetadata.WKeyBundleID
 	oldRKBID := md.RKeyBundleID
 
-	newWKBID, err := crypto.MakeTLFWriterKeyBundleID(extraV3.wkb)
+	newWKBID, err := crypto.MakeTLFWriterKeyBundleID(extraV3.Wkb)
 	if err != nil {
 		return err
 	}
-	newRKBID, err := crypto.MakeTLFReaderKeyBundleID(extraV3.rkb)
+	newRKBID, err := crypto.MakeTLFReaderKeyBundleID(extraV3.Rkb)
 	if err != nil {
 		return err
 	}
@@ -1463,7 +1397,7 @@ func (md *BareRootMetadataV3) FinalizeRekey(
 	md.WriterMetadata.WKeyBundleID = newWKBID
 	md.RKeyBundleID = newRKBID
 
-	extraV3.updateNew(newWKBID != oldWKBID, newRKBID != oldRKBID)
+	extraV3.UpdateNew(newWKBID != oldWKBID, newRKBID != oldRKBID)
 
 	return nil
 }
@@ -1487,7 +1421,7 @@ func (md *BareRootMetadataV3) GetHistoricTLFCryptKey(crypto cryptoPure,
 			"Invalid key generation %d", keyGen)
 	}
 	oldKeys, err := crypto.DecryptTLFCryptKeys(
-		extraV3.wkb.EncryptedHistoricTLFCryptKeys, currentKey)
+		extraV3.Wkb.EncryptedHistoricTLFCryptKeys, currentKey)
 	if err != nil {
 		return kbfscrypto.TLFCryptKey{}, err
 	}

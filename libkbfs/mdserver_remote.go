@@ -637,8 +637,8 @@ func (md *MDServerRemote) Put(ctx context.Context, rmds *RootMetadataSigned,
 		}
 
 		// Add any new key bundles.
-		if extraV3.wkbNew {
-			wkbBytes, err := md.config.Codec().Encode(extraV3.wkb)
+		if extraV3.WkbNew {
+			wkbBytes, err := md.config.Codec().Encode(extraV3.Wkb)
 			if err != nil {
 				return err
 			}
@@ -647,8 +647,8 @@ func (md *MDServerRemote) Put(ctx context.Context, rmds *RootMetadataSigned,
 				Bundle:  wkbBytes,
 			}
 		}
-		if extraV3.rkbNew {
-			rkbBytes, err := md.config.Codec().Encode(extraV3.rkb)
+		if extraV3.RkbNew {
+			rkbBytes, err := md.config.Codec().Encode(extraV3.Rkb)
 			if err != nil {
 				return err
 			}

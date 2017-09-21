@@ -435,7 +435,7 @@ func (md *BareRootMetadataV2) makeSuccessorCopyV3(
 			return nil, nil, err
 		}
 
-		extraCopy = NewExtraMetadataV3(wkbV3, rkbV3, true, true)
+		extraCopy = kbfsmd.NewExtraMetadataV3(wkbV3, rkbV3, true, true)
 	}
 
 	mdV3.LastModifyingUser = md.LastModifyingUser

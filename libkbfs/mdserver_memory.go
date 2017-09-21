@@ -828,22 +828,22 @@ func (md *MDServerMemory) putExtraMetadataLocked(rmds *RootMetadataSigned,
 
 	tlfID := rmds.MD.TlfID()
 
-	if extraV3.wkbNew {
+	if extraV3.WkbNew {
 		wkbID := rmds.MD.GetTLFWriterKeyBundleID()
 		if wkbID == (TLFWriterKeyBundleID{}) {
 			panic("writer key bundle ID is empty")
 		}
 		md.writerKeyBundleDb[mdExtraWriterKey{tlfID, wkbID}] =
-			extraV3.wkb
+			extraV3.Wkb
 	}
 
-	if extraV3.rkbNew {
+	if extraV3.RkbNew {
 		rkbID := rmds.MD.GetTLFReaderKeyBundleID()
 		if rkbID == (TLFReaderKeyBundleID{}) {
 			panic("reader key bundle ID is empty")
 		}
 		md.readerKeyBundleDb[mdExtraReaderKey{tlfID, rkbID}] =
-			extraV3.rkb
+			extraV3.Rkb
 	}
 	return nil
 }

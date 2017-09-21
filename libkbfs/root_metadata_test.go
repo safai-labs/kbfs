@@ -401,8 +401,8 @@ func TestRootMetadataUpconversionPrivate(t *testing.T) {
 	require.Equal(t, kbfsmd.SegregatedKeyBundlesVer, rmd2.Version())
 	extra, ok := rmd2.extra.(*ExtraMetadataV3)
 	require.True(t, ok)
-	require.True(t, extra.wkbNew)
-	require.True(t, extra.rkbNew)
+	require.True(t, extra.WkbNew)
+	require.True(t, extra.RkbNew)
 
 	// compare numbers
 	require.Equal(t, diskUsage, rmd2.DiskUsage())
@@ -454,8 +454,8 @@ func TestRootMetadataUpconversionPrivate(t *testing.T) {
 	require.NoError(t, err)
 	extra, ok = rmd2.extra.(*ExtraMetadataV3)
 	require.True(t, ok)
-	require.True(t, extra.wkbNew)
-	require.True(t, extra.rkbNew)
+	require.True(t, extra.WkbNew)
+	require.True(t, extra.RkbNew)
 }
 
 // Test upconversion from MDv2 to MDv3 for a public folder.
@@ -563,8 +563,8 @@ func TestRootMetadataUpconversionPrivateConflict(t *testing.T) {
 	require.Equal(t, kbfsmd.SegregatedKeyBundlesVer, rmd2.Version())
 	extra, ok := rmd2.extra.(*ExtraMetadataV3)
 	require.True(t, ok)
-	require.True(t, extra.wkbNew)
-	require.True(t, extra.rkbNew)
+	require.True(t, extra.WkbNew)
+	require.True(t, extra.RkbNew)
 
 	// Check the handle, but the cached handle in the MD is a direct copy...
 	require.Equal(

@@ -47,13 +47,13 @@ func TestRootMetadataV3ExtraNew(t *testing.T) {
 	extra := FakeInitialRekey(rmd, bh, kbfscrypto.TLFPublicKey{})
 	extraV3, ok := extra.(*ExtraMetadataV3)
 	require.True(t, ok)
-	require.True(t, extraV3.wkbNew)
-	require.True(t, extraV3.rkbNew)
+	require.True(t, extraV3.WkbNew)
+	require.True(t, extraV3.RkbNew)
 
 	err = rmd.FinalizeRekey(crypto, extra)
 	require.NoError(t, err)
-	require.True(t, extraV3.wkbNew)
-	require.True(t, extraV3.rkbNew)
+	require.True(t, extraV3.WkbNew)
+	require.True(t, extraV3.RkbNew)
 
 	_, extraCopy, err := rmd.MakeSuccessorCopy(
 		codec, nil, extra, -1, nil, true)
@@ -61,8 +61,8 @@ func TestRootMetadataV3ExtraNew(t *testing.T) {
 
 	extraV3Copy, ok := extraCopy.(*ExtraMetadataV3)
 	require.True(t, ok)
-	require.False(t, extraV3Copy.wkbNew)
-	require.False(t, extraV3Copy.rkbNew)
+	require.False(t, extraV3Copy.WkbNew)
+	require.False(t, extraV3Copy.RkbNew)
 }
 
 func TestIsValidRekeyRequestBasicV3(t *testing.T) {

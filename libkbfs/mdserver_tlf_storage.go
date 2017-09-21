@@ -306,25 +306,25 @@ func (s *mdServerTlfStorage) putExtraMetadataLocked(rmds *RootMetadataSigned,
 		return errors.New("Invalid extra metadata")
 	}
 
-	if extraV3.wkbNew {
+	if extraV3.WkbNew {
 		wkbID := rmds.MD.GetTLFWriterKeyBundleID()
 		if wkbID == (TLFWriterKeyBundleID{}) {
 			panic("writer key bundle ID is empty")
 		}
 		err := kbfscodec.SerializeToFileIfNotExist(
-			s.codec, extraV3.wkb, s.writerKeyBundleV3Path(wkbID))
+			s.codec, extraV3.Wkb, s.writerKeyBundleV3Path(wkbID))
 		if err != nil {
 			return err
 		}
 	}
 
-	if extraV3.rkbNew {
+	if extraV3.RkbNew {
 		rkbID := rmds.MD.GetTLFReaderKeyBundleID()
 		if rkbID == (TLFReaderKeyBundleID{}) {
 			panic("reader key bundle ID is empty")
 		}
 		err := kbfscodec.SerializeToFileIfNotExist(
-			s.codec, extraV3.rkb, s.readerKeyBundleV3Path(rkbID))
+			s.codec, extraV3.Rkb, s.readerKeyBundleV3Path(rkbID))
 		if err != nil {
 			return err
 		}

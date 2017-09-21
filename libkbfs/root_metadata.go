@@ -90,14 +90,7 @@ func (p PrivateMetadata) ChangesBlockInfo() BlockInfo {
 	return p.cachedChanges.Info
 }
 
-// ExtraMetadata is a per-version blob of extra metadata which may
-// exist outside of the given metadata block, e.g. key bundles for
-// post-v2 metadata.
-type ExtraMetadata interface {
-	MetadataVersion() MetadataVer
-	DeepCopy(kbfscodec.Codec) (ExtraMetadata, error)
-	MakeSuccessorCopy(kbfscodec.Codec) (ExtraMetadata, error)
-}
+type ExtraMetadata = kbfsmd.ExtraMetadata
 
 // DumpExtraMetadata returns a detailed dump of the given
 // ExtraMetadata's contents.
