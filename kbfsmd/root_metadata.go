@@ -5,6 +5,8 @@
 package kbfsmd
 
 import (
+	"golang.org/x/net/context"
+
 	"github.com/keybase/client/go/protocol/keybase1"
 	"github.com/keybase/kbfs/kbfscodec"
 	"github.com/keybase/kbfs/kbfscrypto"
@@ -104,4 +106,93 @@ type RootMetadata interface {
 	// StoresHistoricTLFCryptKeys returns whether or not history keys are symmetrically encrypted; if not, they're
 	// encrypted per-device.
 	StoresHistoricTLFCryptKeys() bool
+}
+
+type MutableRootMetadata interface {
+
+	// SetRefBytes sets the number of newly referenced bytes of data blocks introduced by this revision of metadata.
+	SetRefBytes(refBytes uint64)
+	// SetUnrefBytes sets the number of newly unreferenced bytes introduced by this revision of metadata.
+	SetUnrefBytes(unrefBytes uint64)
+	// SetMDRefBytes sets the number of newly referenced bytes of MD blocks introduced by this revision of metadata.
+	SetMDRefBytes(mdRefBytes uint64)
+	// SetDiskUsage sets the estimated disk usage for the folder as of this revision of metadata.
+	SetDiskUsage(diskUsage uint64)
+	// SetMDDiskUsage sets the estimated MD disk usage for the folder as of this revision of metadata.
+	SetMDDiskUsage(mdDiskUsage uint64)
+	// AddRefBytes increments the number of newly referenced bytes of data blocks introduced by this revision of metadata.
+	AddRefBytes(refBytes uint64)
+	// AddUnrefBytes increments the number of newly unreferenced bytes introduced by this revision of metadata.
+	AddUnrefBytes(unrefBytes uint64)
+	// AddMDRefBytes increments the number of newly referenced bytes of MD blocks introduced by this revision of metadata.
+	AddMDRefBytes(mdRefBytes uint64)
+	// AddDiskUsage increments the estimated disk usage for the folder as of this revision of metadata.
+	AddDiskUsage(diskUsage uint64)
+	// AddMDDiskUsage increments the estimated MD disk usage for the folder as of this revision of metadata.
+	AddMDDiskUsage(mdDiskUsage uint64)
+	// ClearRekeyBit unsets any set rekey bit.
+	ClearRekeyBit()
+	// ClearWriterMetadataCopiedBit unsets any set writer metadata copied bit.
+	ClearWriterMetadataCopiedBit()
+	// ClearFinalBit unsets any final bit.
+	ClearFinalBit()
+	// SetUnmerged sets the unmerged bit.
+	SetUnmerged()
+
+	// SetPrevRoot sets the hash of the previous metadata revision.
+	SetPrevRoot(mdID ID)
+	// SetSerializedPrivateMetadata sets the serialized private metadata.
+	SetSerializedPrivateMetadata(spmd []byte)
+	// SignWriterMetadataInternally signs the writer metadata, for
+	// versions that store this signature inside the metadata.
+	SignWriterMetadataInternally(ctx context.Context,
+		codec kbfscodec.Codec, signer kbfscrypto.Signer) error
+	// SetLastModifyingWriter sets the UID of the last user to modify the writer metadata.
+	SetLastModifyingWriter(user keybase1.UID)
+	// SetLastModifyingUser sets the UID of the last user to modify any of the metadata.
+	SetLastModifyingUser(user keybase1.UID)
+	// SetRekeyBit sets the rekey bit.
+	SetRekeyBit()
+	// SetFinalBit sets the finalized bit.
+	SetFinalBit()
+	// SetWriterMetadataCopiedBit set the writer metadata copied bit.
+	SetWriterMetadataCopiedBit()
+	// SetRevision sets the revision number of the underlying metadata.
+	SetRevision(revision Revision)
+	// SetMerkleRoot sets the root of the global Keybase Merkle tree
+	// at the time the MD was written.
+	SetMerkleRoot(root keybase1.MerkleRootV2)
+	// SetUnresolvedReaders sets the list of unresolved readers associated with this folder.
+	SetUnresolvedReaders(readers []keybase1.SocialAssertion)
+	// SetUnresolvedWriters sets the list of unresolved writers associated with this folder.
+	SetUnresolvedWriters(writers []keybase1.SocialAssertion)
+	// SetConflictInfo sets any conflict info associated with this metadata revision.
+	SetConflictInfo(ci *tlf.HandleExtension)
+	// SetFinalizedInfo sets any finalized info associated with this metadata revision.
+	SetFinalizedInfo(fi *tlf.HandleExtension)
+	// SetWriters sets the list of writers associated with this folder.
+	SetWriters(writers []keybase1.UserOrTeamID)
+	// SetTlfID sets the ID of the underlying folder in the metadata structure.
+	SetTlfID(tlf tlf.ID)
+
+	// SetLatestKeyGenerationForTeamTLF sets the latest key generation
+	// number of a team TLF.  It is not valid to call this for
+	// anything but a team TLF.
+	SetLatestKeyGenerationForTeamTLF(keyGen KeyGen)
+
+	// PromoteReaders converts the given set of users (which may
+	// be empty) from readers to writers.
+	PromoteReaders(readersToPromote map[keybase1.UID]bool,
+		extra ExtraMetadata) error
+
+	// RevokeRemovedDevices removes key info for any device not in
+	// the given maps, and returns a corresponding map of server
+	// halves to delete from the server.
+	//
+	// Note: the returned server halves may not be for all key
+	// generations, e.g. for MDv3 it's only for the latest key
+	// generation.
+	RevokeRemovedDevices(
+		updatedWriterKeys, updatedReaderKeys UserDevicePublicKeys,
+		extra ExtraMetadata) (ServerHalfRemovalInfo, error)
 }
