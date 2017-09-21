@@ -8,30 +8,15 @@ import (
 	"fmt"
 
 	"github.com/keybase/client/go/protocol/keybase1"
-	"github.com/keybase/go-codec/codec"
 	"github.com/keybase/kbfs/kbfscrypto"
-	"github.com/keybase/kbfs/kbfshash"
+	"github.com/keybase/kbfs/kbfsmd"
 )
 
-// TLFCryptKeyServerHalfID is the identifier type for a server-side key half.
-type TLFCryptKeyServerHalfID struct {
-	ID kbfshash.HMAC // Exported for serialization.
-}
+// TLFCryptKeyServerHalfID is a temporary alias.
+type TLFCryptKeyServerHalfID = kbfsmd.TLFCryptKeyServerHalfID
 
-// String implements the Stringer interface for TLFCryptKeyServerHalfID.
-func (id TLFCryptKeyServerHalfID) String() string {
-	return id.ID.String()
-}
-
-// TLFCryptKeyInfo is a per-device key half entry in the
-// TLF{Writer,Reader}KeyBundleV{2,3}.
-type TLFCryptKeyInfo struct {
-	ClientHalf   EncryptedTLFCryptKeyClientHalf
-	ServerHalfID TLFCryptKeyServerHalfID
-	EPubKeyIndex int `codec:"i,omitempty"`
-
-	codec.UnknownFieldSetHandler
-}
+// TLFCryptKeyInfo is a temporary alias.
+type TLFCryptKeyInfo = kbfsmd.TLFCryptKeyInfo
 
 // DevicePublicKeys is a set of a user's devices (identified by the
 // corresponding device CryptPublicKey).
