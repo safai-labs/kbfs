@@ -31,6 +31,30 @@ type TLFCryptKeyInfo struct {
 	codec.UnknownFieldSetHandler
 }
 
+// DevicePublicKeys is a set of a user's devices (identified by the
+// corresponding device CryptPublicKey).
+type DevicePublicKeys map[kbfscrypto.CryptPublicKey]bool
+
+// Equals returns whether both sets of keys are equal.
+func (dpk DevicePublicKeys) Equals(other DevicePublicKeys) bool {
+	if len(dpk) != len(other) {
+		return false
+	}
+
+	for k := range dpk {
+		if !other[k] {
+			return false
+		}
+	}
+
+	return true
+}
+
+// DeviceKeyServerHalves is a map from a user devices (identified by the
+// corresponding device CryptPublicKey) to corresponding key server
+// halves.
+type DeviceKeyServerHalves map[kbfscrypto.CryptPublicKey]kbfscrypto.TLFCryptKeyServerHalf
+
 // cryptoPure contains all methods of Crypto that don't depend on
 // implicit state, i.e. they're pure functions of the input.
 type cryptoPure interface {

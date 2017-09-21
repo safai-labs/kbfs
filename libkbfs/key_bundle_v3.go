@@ -7,7 +7,6 @@ package libkbfs
 import (
 	"encoding"
 	"fmt"
-	"reflect"
 
 	"github.com/keybase/client/go/protocol/keybase1"
 	"github.com/keybase/go-codec/codec"
@@ -19,76 +18,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// A lot of this code is duplicated from key_bundle_v2.go, except with
-// DeviceKeyInfoMapV2 (keyed by keybase1.KID) replaced with
-// DeviceKeyInfoMapV3 (keyed by kbfscrypto.CryptPublicKey).
-
-// DeviceKeyInfoMapV3 is a map from a user devices (identified by the
-// corresponding device CryptPublicKey) to the TLF's symmetric secret
-// key information.
-type DeviceKeyInfoMapV3 map[kbfscrypto.CryptPublicKey]TLFCryptKeyInfo
-
-// static sizes in DeviceKeyInfoMapV3
-var (
-	ssCryptPublicKey  = int(reflect.TypeOf(kbfscrypto.CryptPublicKey{}).Size())
-	ssTLFCryptKeyInfo = int(reflect.TypeOf(TLFCryptKeyInfo{}).Size())
-)
-
-// Size implements the cache.Measurable interface.
-func (dkimV3 DeviceKeyInfoMapV3) Size() int {
-	// statically-sized part
-	mapSize := cache.StaticSizeOfMapWithSize(
-		ssCryptPublicKey, ssTLFCryptKeyInfo, len(dkimV3))
-
-	// go through pointer type content
-	var contentSize int
-	for k, v := range dkimV3 {
-		contentSize += len(k.KID())
-		contentSize += len(v.ServerHalfID.ID.String())
-
-		// We are not using v.ClientHalf.encryptedData here since that would
-		// include the size of struct itself which is already counted in
-		// cache.StaticSizeOfMapWithSize.
-		contentSize += len(v.ClientHalf.Data) +
-			len(v.ClientHalf.EncryptedData.Nonce)
-	}
-
-	return mapSize + contentSize
-}
-
-func (dkimV3 DeviceKeyInfoMapV3) fillInDeviceInfos(crypto cryptoPure,
-	uid keybase1.UID, tlfCryptKey kbfscrypto.TLFCryptKey,
-	ePrivKey kbfscrypto.TLFEphemeralPrivateKey, ePubIndex int,
-	updatedDeviceKeys DevicePublicKeys) (
-	serverHalves DeviceKeyServerHalves, err error) {
-	serverHalves = make(DeviceKeyServerHalves, len(updatedDeviceKeys))
-	// TODO: parallelize
-	for k := range updatedDeviceKeys {
-		// Skip existing entries, and only fill in new ones
-		if _, ok := dkimV3[k]; ok {
-			continue
-		}
-
-		clientInfo, serverHalf, err := kbfsmd.SplitTLFCryptKey(
-			crypto, uid, tlfCryptKey, ePrivKey, ePubIndex, k)
-		if err != nil {
-			return nil, err
-		}
-
-		dkimV3[k] = clientInfo
-		serverHalves[k] = serverHalf
-	}
-
-	return serverHalves, nil
-}
-
-func (dkimV3 DeviceKeyInfoMapV3) toPublicKeys() DevicePublicKeys {
-	publicKeys := make(DevicePublicKeys, len(dkimV3))
-	for key := range dkimV3 {
-		publicKeys[key] = true
-	}
-	return publicKeys
-}
+// DeviceKeyInfoMapV3 is a temporary alias.
+type DeviceKeyInfoMapV3 = kbfsmd.DeviceKeyInfoMapV3
 
 // UserDeviceKeyInfoMapV3 maps a user's keybase UID to their
 // DeviceKeyInfoMapV3.
@@ -112,7 +43,7 @@ func (udkimV3 UserDeviceKeyInfoMapV3) Size() int {
 func (udkimV3 UserDeviceKeyInfoMapV3) toPublicKeys() UserDevicePublicKeys {
 	publicKeys := make(UserDevicePublicKeys, len(udkimV3))
 	for u, dkimV3 := range udkimV3 {
-		publicKeys[u] = dkimV3.toPublicKeys()
+		publicKeys[u] = dkimV3.ToPublicKeys()
 	}
 	return publicKeys
 }
@@ -204,7 +135,7 @@ func (udkimV3 UserDeviceKeyInfoMapV3) fillInUserInfos(
 			udkimV3[u] = DeviceKeyInfoMapV3{}
 		}
 
-		deviceServerHalves, err := udkimV3[u].fillInDeviceInfos(
+		deviceServerHalves, err := udkimV3[u].FillInDeviceInfos(
 			crypto, u, tlfCryptKey, ePrivKey, newIndex,
 			updatedDeviceKeys)
 		if err != nil {

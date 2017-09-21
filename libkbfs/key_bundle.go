@@ -18,24 +18,8 @@ type TLFCryptKeyServerHalfID = kbfsmd.TLFCryptKeyServerHalfID
 // TLFCryptKeyInfo is a temporary alias.
 type TLFCryptKeyInfo = kbfsmd.TLFCryptKeyInfo
 
-// DevicePublicKeys is a set of a user's devices (identified by the
-// corresponding device CryptPublicKey).
-type DevicePublicKeys map[kbfscrypto.CryptPublicKey]bool
-
-// Equals returns whether both sets of keys are equal.
-func (dpk DevicePublicKeys) Equals(other DevicePublicKeys) bool {
-	if len(dpk) != len(other) {
-		return false
-	}
-
-	for k := range dpk {
-		if !other[k] {
-			return false
-		}
-	}
-
-	return true
-}
+// DevicePublicKeys is a temporary alias.
+type DevicePublicKeys = kbfsmd.DevicePublicKeys
 
 // UserDevicePublicKeys is a map from users to that user's set of devices.
 type UserDevicePublicKeys map[keybase1.UID]DevicePublicKeys
@@ -68,10 +52,8 @@ func (udpk UserDevicePublicKeys) Equals(other UserDevicePublicKeys) bool {
 	return true
 }
 
-// DeviceKeyServerHalves is a map from a user devices (identified by the
-// corresponding device CryptPublicKey) to corresponding key server
-// halves.
-type DeviceKeyServerHalves map[kbfscrypto.CryptPublicKey]kbfscrypto.TLFCryptKeyServerHalf
+// DeviceKeyServerHalves is a temporary alias.
+type DeviceKeyServerHalves = kbfsmd.DeviceKeyServerHalves
 
 // UserDeviceKeyServerHalves maps a user's keybase UID to their
 // DeviceServerHalves map.
