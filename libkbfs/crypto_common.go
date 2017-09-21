@@ -191,7 +191,7 @@ func (c CryptoCommon) EncryptTLFCryptKeyClientHalf(
 
 	return EncryptedTLFCryptKeyClientHalf{
 		encryptedData{
-			Version:       EncryptionSecretbox,
+			Version:       kbfscrypto.EncryptionSecretbox,
 			Nonce:         nonce[:],
 			EncryptedData: encryptedBytes,
 		},
@@ -208,7 +208,7 @@ func (c CryptoCommon) encryptData(data []byte, key [32]byte) (encryptedData, err
 	sealedData := secretbox.Seal(nil, data, &nonce, &key)
 
 	return encryptedData{
-		Version:       EncryptionSecretbox,
+		Version:       kbfscrypto.EncryptionSecretbox,
 		Nonce:         nonce[:],
 		EncryptedData: sealedData,
 	}, nil
@@ -232,9 +232,9 @@ func (c CryptoCommon) EncryptPrivateMetadata(
 }
 
 func (c CryptoCommon) decryptData(encryptedData encryptedData, key [32]byte) ([]byte, error) {
-	if encryptedData.Version != EncryptionSecretbox {
+	if encryptedData.Version != kbfscrypto.EncryptionSecretbox {
 		return nil, errors.WithStack(
-			UnknownEncryptionVer{encryptedData.Version})
+			kbfscrypto.UnknownEncryptionVer{Ver: encryptedData.Version})
 	}
 
 	var nonce [24]byte
@@ -424,7 +424,7 @@ func (c CryptoCommon) EncryptMerkleLeaf(leaf MerkleLeaf,
 	encryptedData := box.Seal(
 		nil, leafBytes[:], nonce, &pubKeyData, &privKeyData)
 	return EncryptedMerkleLeaf{
-		Version:       EncryptionSecretbox,
+		Version:       kbfscrypto.EncryptionSecretbox,
 		EncryptedData: encryptedData,
 	}, nil
 }
@@ -434,9 +434,9 @@ func (c CryptoCommon) EncryptMerkleLeaf(leaf MerkleLeaf,
 func (c CryptoCommon) DecryptMerkleLeaf(encryptedLeaf EncryptedMerkleLeaf,
 	privKey kbfscrypto.TLFPrivateKey, nonce *[24]byte,
 	ePubKey kbfscrypto.TLFEphemeralPublicKey) (*MerkleLeaf, error) {
-	if encryptedLeaf.Version != EncryptionSecretbox {
+	if encryptedLeaf.Version != kbfscrypto.EncryptionSecretbox {
 		return nil, errors.WithStack(
-			UnknownEncryptionVer{encryptedLeaf.Version})
+			kbfscrypto.UnknownEncryptionVer{Ver: encryptedLeaf.Version})
 	}
 	pubKeyData := ePubKey.Data()
 	privKeyData := privKey.Data()

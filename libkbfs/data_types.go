@@ -5,7 +5,6 @@
 package libkbfs
 
 import (
-	"encoding/hex"
 	"fmt"
 	"reflect"
 	"strings"
@@ -13,7 +12,6 @@ import (
 
 	"github.com/keybase/client/go/libkb"
 	"github.com/keybase/client/go/protocol/keybase1"
-	"github.com/keybase/kbfs/cache"
 	"github.com/keybase/kbfs/kbfsblock"
 	"github.com/keybase/kbfs/kbfscrypto"
 	"github.com/keybase/kbfs/kbfsmd"
@@ -76,47 +74,7 @@ type SessionInfo struct {
 	VerifyingKey   kbfscrypto.VerifyingKey
 }
 
-// EncryptionVer denotes a version for the encryption method.
-type EncryptionVer int
-
-const (
-	// EncryptionSecretbox is the encryption version that uses
-	// nacl/secretbox or nacl/box.
-	EncryptionSecretbox EncryptionVer = 1
-)
-
-func (v EncryptionVer) String() string {
-	switch v {
-	case EncryptionSecretbox:
-		return "EncryptionSecretbox"
-	default:
-		return fmt.Sprintf("EncryptionVer(%d)", v)
-	}
-}
-
-// encryptedData is encrypted data with a nonce and a version.
-type encryptedData struct {
-	// Exported only for serialization purposes. Should only be
-	// used by implementations of Crypto.
-	Version       EncryptionVer `codec:"v"`
-	EncryptedData []byte        `codec:"e"`
-	Nonce         []byte        `codec:"n"`
-}
-
-// Size implements the cache.Measurable interface.
-func (ed encryptedData) Size() int {
-	return cache.IntSize /* ed.Version */ +
-		cache.PtrSize + len(ed.EncryptedData) + cache.PtrSize + len(ed.Nonce)
-}
-
-func (ed encryptedData) String() string {
-	if reflect.DeepEqual(ed, encryptedData{}) {
-		return "EncryptedData{}"
-	}
-	return fmt.Sprintf("%s{data=%s, nonce=%s}",
-		ed.Version, hex.EncodeToString(ed.EncryptedData),
-		hex.EncodeToString(ed.Nonce))
-}
+type encryptedData = kbfscrypto.EncryptedData
 
 // EncryptedTLFCryptKeyClientHalf is an encrypted
 // TLFCryptKeyClientHalf object.
@@ -142,7 +100,7 @@ type EncryptedTLFCryptKeys struct {
 // EncryptedMerkleLeaf is an encrypted Merkle leaf.
 type EncryptedMerkleLeaf struct {
 	_struct       bool `codec:",toarray"`
-	Version       EncryptionVer
+	Version       kbfscrypto.EncryptionVer
 	EncryptedData []byte
 }
 

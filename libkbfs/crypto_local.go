@@ -38,9 +38,9 @@ func NewCryptoLocal(codec kbfscodec.Codec,
 func (c CryptoLocal) prepareTLFCryptKeyClientHalf(
 	encryptedClientHalf EncryptedTLFCryptKeyClientHalf) (
 	nonce [24]byte, err error) {
-	if encryptedClientHalf.Version != EncryptionSecretbox {
-		return [24]byte{}, errors.WithStack(UnknownEncryptionVer{
-			encryptedClientHalf.Version})
+	if encryptedClientHalf.Version != kbfscrypto.EncryptionSecretbox {
+		return [24]byte{}, errors.WithStack(kbfscrypto.UnknownEncryptionVer{
+			Ver: encryptedClientHalf.Version})
 	}
 
 	// This check isn't strictly needed, but parallels the

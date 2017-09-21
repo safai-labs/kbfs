@@ -660,17 +660,6 @@ func (e KeyCacheHitError) Error() string {
 	return fmt.Sprintf("Invalid key with tlf=%s, keyGen=%d", e.tlf, e.keyGen)
 }
 
-// UnknownEncryptionVer indicates that we can't decrypt an
-// encryptedData object because it has an unknown version.
-type UnknownEncryptionVer struct {
-	ver EncryptionVer
-}
-
-// Error implements the error interface for UnknownEncryptionVer.
-func (e UnknownEncryptionVer) Error() string {
-	return fmt.Sprintf("Unknown encryption version %d", int(e.ver))
-}
-
 // InvalidNonceError indicates that an invalid cryptographic nonce was
 // detected.
 type InvalidNonceError struct {
