@@ -24,15 +24,6 @@ import (
 type BareRootMetadata interface {
 	kbfsmd.RootMetadata
 
-	// KeyGenerationsToUpdate returns a range that has to be
-	// updated when rekeying. start is included, but end is not
-	// included. This range can be empty (i.e., start >= end), in
-	// which case there's nothing to update, i.e. the TLF is
-	// public, or there aren't any existing key generations.
-	KeyGenerationsToUpdate() (start KeyGen, end KeyGen)
-	// LatestKeyGeneration returns the most recent key generation in this
-	// BareRootMetadata, or PublicKeyGen if this TLF is public.
-	LatestKeyGeneration() KeyGen
 	// IsValidRekeyRequest returns true if the current block is a simple rekey wrt
 	// the passed block.
 	IsValidRekeyRequest(codec kbfscodec.Codec, prevMd BareRootMetadata,
