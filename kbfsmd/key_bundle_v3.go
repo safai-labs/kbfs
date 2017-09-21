@@ -484,3 +484,22 @@ func (h *TLFReaderKeyBundleID) UnmarshalBinary(data []byte) error {
 func (h TLFReaderKeyBundleID) IsNil() bool {
 	return h == TLFReaderKeyBundleID{}
 }
+
+// GetTLFCryptKeyServerHalfID implements the Crypto interface for CryptoCommon.
+func GetTLFCryptKeyServerHalfID(
+	user keybase1.UID, devicePubKey kbfscrypto.CryptPublicKey,
+	serverHalf kbfscrypto.TLFCryptKeyServerHalf) (
+	TLFCryptKeyServerHalfID, error) {
+	key, err := serverHalf.MarshalBinary()
+	if err != nil {
+		return TLFCryptKeyServerHalfID{}, err
+	}
+	data := append(user.ToBytes(), devicePubKey.KID().ToBytes()...)
+	hmac, err := kbfshash.DefaultHMAC(key, data)
+	if err != nil {
+		return TLFCryptKeyServerHalfID{}, err
+	}
+	return TLFCryptKeyServerHalfID{
+		ID: hmac,
+	}, nil
+}
