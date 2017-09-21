@@ -25,6 +25,7 @@ const (
 	// storage of key bundles.
 	SegregatedKeyBundlesVer MetadataVer = 3
 
+	// DefaultClientMetadataVer is the default metadata version to use.
 	DefaultClientMetadataVer MetadataVer = SegregatedKeyBundlesVer
 )
 
