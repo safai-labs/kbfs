@@ -313,14 +313,14 @@ type MutableBareRootMetadata interface {
 func MakeInitialBareRootMetadata(
 	ver MetadataVer, tlfID tlf.ID, h tlf.Handle) (
 	MutableBareRootMetadata, error) {
-	if ver < FirstValidMetadataVer {
+	if ver < kbfsmd.FirstValidMetadataVer {
 		return nil, InvalidMetadataVersionError{tlfID, ver}
 	}
-	if ver > SegregatedKeyBundlesVer {
+	if ver > kbfsmd.SegregatedKeyBundlesVer {
 		// Shouldn't be possible at the moment.
 		panic("Invalid metadata version")
 	}
-	if ver < SegregatedKeyBundlesVer {
+	if ver < kbfsmd.SegregatedKeyBundlesVer {
 		return MakeInitialBareRootMetadataV2(tlfID, h)
 	}
 

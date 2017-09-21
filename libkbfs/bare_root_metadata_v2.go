@@ -366,7 +366,7 @@ func (md *BareRootMetadataV2) MakeSuccessorCopy(
 	isReadableAndWriter bool) (
 	MutableBareRootMetadata, ExtraMetadata, error) {
 
-	if !isReadableAndWriter || (latestMDVer < SegregatedKeyBundlesVer) {
+	if !isReadableAndWriter || (latestMDVer < kbfsmd.SegregatedKeyBundlesVer) {
 		// Continue with the current version.  If we're just a reader,
 		// or can't decrypt the MD, we have to continue with v2
 		// because we can't just copy a v2 signature into a v3 MD
@@ -1124,11 +1124,11 @@ func (md *BareRootMetadataV2) Version() MetadataVer {
 	if len(md.Extra.UnresolvedWriters) > 0 || len(md.UnresolvedReaders) > 0 ||
 		md.ConflictInfo != nil ||
 		md.FinalizedInfo != nil {
-		return InitialExtraMetadataVer
+		return kbfsmd.InitialExtraMetadataVer
 	}
 	// Let other types of MD objects use the older version since they
 	// are still compatible with older clients.
-	return PreExtraMetadataVer
+	return kbfsmd.PreExtraMetadataVer
 }
 
 // GetCurrentTLFPublicKey implements the BareRootMetadata interface

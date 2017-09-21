@@ -145,7 +145,7 @@ func NewExtraMetadataV3(
 
 // MetadataVersion implements the ExtraMetadata interface for ExtraMetadataV3.
 func (extra ExtraMetadataV3) MetadataVersion() MetadataVer {
-	return SegregatedKeyBundlesVer
+	return kbfsmd.SegregatedKeyBundlesVer
 }
 
 func (extra *ExtraMetadataV3) updateNew(wkbNew, rkbNew bool) {
@@ -1382,7 +1382,7 @@ func (md *BareRootMetadataV3) ClearFinalBit() {
 
 // Version implements the MutableBareRootMetadata interface for BareRootMetadataV3.
 func (md *BareRootMetadataV3) Version() MetadataVer {
-	return SegregatedKeyBundlesVer
+	return kbfsmd.SegregatedKeyBundlesVer
 }
 
 // GetCurrentTLFPublicKey implements the BareRootMetadata interface

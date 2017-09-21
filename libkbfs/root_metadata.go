@@ -1270,7 +1270,7 @@ func EncodeRootMetadataSigned(
 		return nil, err
 	}
 	rmdsCopy := *rmds
-	if rmdsCopy.Version() < SegregatedKeyBundlesVer {
+	if rmdsCopy.Version() < kbfsmd.SegregatedKeyBundlesVer {
 		// For v2, the writer signature is in rmds.MD, so
 		// remove the one in rmds.
 		rmdsCopy.WriterSigInfo = kbfscrypto.SignatureInfo{}
@@ -1283,16 +1283,16 @@ func EncodeRootMetadataSigned(
 func DecodeRootMetadata(codec kbfscodec.Codec, tlf tlf.ID,
 	ver, max MetadataVer, buf []byte) (
 	MutableBareRootMetadata, error) {
-	if ver < FirstValidMetadataVer {
+	if ver < kbfsmd.FirstValidMetadataVer {
 		return nil, InvalidMetadataVersionError{tlf, ver}
 	} else if ver > max {
 		return nil, NewMetadataVersionError{tlf, ver}
 	}
-	if ver > SegregatedKeyBundlesVer {
+	if ver > kbfsmd.SegregatedKeyBundlesVer {
 		// Shouldn't be possible at the moment.
 		panic("Invalid metadata version")
 	}
-	if ver < SegregatedKeyBundlesVer {
+	if ver < kbfsmd.SegregatedKeyBundlesVer {
 		var brmd BareRootMetadataV2
 		if err := codec.Decode(buf, &brmd); err != nil {
 			return nil, err
@@ -1312,17 +1312,17 @@ func DecodeRootMetadataSigned(
 	codec kbfscodec.Codec, tlf tlf.ID, ver, max MetadataVer, buf []byte,
 	untrustedServerTimestamp time.Time) (
 	*RootMetadataSigned, error) {
-	if ver < FirstValidMetadataVer {
+	if ver < kbfsmd.FirstValidMetadataVer {
 		return nil, InvalidMetadataVersionError{tlf, ver}
 	} else if ver > max {
 		return nil, NewMetadataVersionError{tlf, ver}
 	}
-	if ver > SegregatedKeyBundlesVer {
+	if ver > kbfsmd.SegregatedKeyBundlesVer {
 		// Shouldn't be possible at the moment.
 		panic("Invalid metadata version")
 	}
 	var rmds RootMetadataSigned
-	if ver < SegregatedKeyBundlesVer {
+	if ver < kbfsmd.SegregatedKeyBundlesVer {
 		rmds.MD = &BareRootMetadataV2{}
 	} else {
 		rmds.MD = &BareRootMetadataV3{}
@@ -1330,7 +1330,7 @@ func DecodeRootMetadataSigned(
 	if err := codec.Decode(buf, &rmds); err != nil {
 		return nil, err
 	}
-	if ver < SegregatedKeyBundlesVer {
+	if ver < kbfsmd.SegregatedKeyBundlesVer {
 		// For v2, the writer signature is in rmds.MD, so copy
 		// it out.
 		if !rmds.WriterSigInfo.IsNil() {

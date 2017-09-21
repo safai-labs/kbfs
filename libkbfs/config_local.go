@@ -19,6 +19,7 @@ import (
 	"github.com/keybase/kbfs/ioutil"
 	"github.com/keybase/kbfs/kbfscodec"
 	"github.com/keybase/kbfs/kbfscrypto"
+	"github.com/keybase/kbfs/kbfsmd"
 	"github.com/keybase/kbfs/tlf"
 	"github.com/pkg/errors"
 	metrics "github.com/rcrowley/go-metrics"
@@ -348,7 +349,7 @@ func NewConfigLocal(mode InitMode, loggerFn func(module string) logger.Logger,
 	config.tlfValidDuration = tlfValidDurationDefault
 	config.bgFlushDirOpBatchSize = bgFlushDirOpBatchSizeDefault
 	config.bgFlushPeriod = bgFlushPeriodDefault
-	config.metadataVersion = defaultClientMetadataVer
+	config.metadataVersion = kbfsmd.DefaultClientMetadataVer
 	config.defaultBlockType = defaultBlockTypeDefault
 	config.quotaUsage =
 		make(map[keybase1.UserOrTeamID]*EventuallyConsistentQuotaUsage)
