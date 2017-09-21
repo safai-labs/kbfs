@@ -19,7 +19,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// A lot of this code is duplicated from key_bundle_v3.go, except with
+// A lot of this code is duplicated from key_bundle_v2.go, except with
 // DeviceKeyInfoMapV2 (keyed by keybase1.KID) replaced with
 // DeviceKeyInfoMapV3 (keyed by kbfscrypto.CryptPublicKey).
 
