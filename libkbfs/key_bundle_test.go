@@ -37,9 +37,9 @@ func makeFakeTLFCryptKeyInfoFuture(t *testing.T) tlfCryptKeyInfoFuture {
 	cki := TLFCryptKeyInfo{
 		EncryptedTLFCryptKeyClientHalf{
 			kbfscrypto.EncryptedData{
-				kbfscrypto.EncryptionSecretbox,
-				[]byte("fake encrypted data"),
-				[]byte("fake nonce"),
+				Version: kbfscrypto.EncryptionSecretbox,
+				Data:    []byte("fake encrypted data"),
+				Nonce:   []byte("fake nonce"),
 			},
 		},
 		TLFCryptKeyServerHalfID{hmac},
