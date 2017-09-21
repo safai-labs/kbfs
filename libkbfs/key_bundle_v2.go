@@ -126,7 +126,7 @@ func (udkimV2 UserDeviceKeyInfoMapV2) removeDevicesNotIn(
 	removalInfo := make(ServerHalfRemovalInfo)
 	for uid, dkim := range udkimV2 {
 		userRemoved := false
-		deviceServerHalfIDs := make(deviceServerHalfRemovalInfo)
+		deviceServerHalfIDs := make(kbfsmd.DeviceServerHalfRemovalInfo)
 		if deviceKeys, ok := updatedUserKeys[uid]; ok {
 			for kid, info := range dkim {
 				key := kbfscrypto.MakeCryptPublicKey(kid)
@@ -156,9 +156,9 @@ func (udkimV2 UserDeviceKeyInfoMapV2) removeDevicesNotIn(
 			delete(udkimV2, uid)
 		}
 
-		removalInfo[uid] = userServerHalfRemovalInfo{
-			userRemoved:         userRemoved,
-			deviceServerHalfIDs: deviceServerHalfIDs,
+		removalInfo[uid] = kbfsmd.UserServerHalfRemovalInfo{
+			UserRemoved:         userRemoved,
+			DeviceServerHalfIDs: deviceServerHalfIDs,
 		}
 	}
 

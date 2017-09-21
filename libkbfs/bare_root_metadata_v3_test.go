@@ -212,9 +212,9 @@ func TestRevokeRemovedDevicesV3(t *testing.T) {
 		updatedWriterKeys, updatedReaderKeys, extra)
 	require.NoError(t, err)
 	require.Equal(t, ServerHalfRemovalInfo{
-		uid2: userServerHalfRemovalInfo{
-			userRemoved: true,
-			deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+		uid2: kbfsmd.UserServerHalfRemovalInfo{
+			UserRemoved: true,
+			DeviceServerHalfIDs: kbfsmd.DeviceServerHalfRemovalInfo{
 				key2: []TLFCryptKeyServerHalfID{id2a},
 			},
 		},
@@ -318,20 +318,20 @@ func TestRevokeLastDeviceV3(t *testing.T) {
 		updatedWriterKeys, updatedReaderKeys, extra)
 	require.NoError(t, err)
 	require.Equal(t, ServerHalfRemovalInfo{
-		uid1: userServerHalfRemovalInfo{
-			deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+		uid1: kbfsmd.UserServerHalfRemovalInfo{
+			DeviceServerHalfIDs: kbfsmd.DeviceServerHalfRemovalInfo{
 				key1: []TLFCryptKeyServerHalfID{id1},
 			},
 		},
-		uid2: userServerHalfRemovalInfo{
-			userRemoved: true,
-			deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+		uid2: kbfsmd.UserServerHalfRemovalInfo{
+			UserRemoved: true,
+			DeviceServerHalfIDs: kbfsmd.DeviceServerHalfRemovalInfo{
 				key2: []TLFCryptKeyServerHalfID{id2},
 			},
 		},
-		uid4: userServerHalfRemovalInfo{
-			userRemoved:         true,
-			deviceServerHalfIDs: deviceServerHalfRemovalInfo{},
+		uid4: kbfsmd.UserServerHalfRemovalInfo{
+			UserRemoved:         true,
+			DeviceServerHalfIDs: kbfsmd.DeviceServerHalfRemovalInfo{},
 		},
 	}, removalInfo)
 
@@ -469,7 +469,7 @@ func checkKeyBundlesV3(t *testing.T, expectedRekeyInfos []expectedRekeyInfoV3,
 			expected.readerPrivKeys.toPublicKeys())
 		userPubKeys := userDeviceServerHalvesToPublicKeys(
 			expected.serverHalves)
-		require.Equal(t, expectedUserPubKeys.removeKeylessUsersForTest(), userPubKeys)
+		require.Equal(t, expectedUserPubKeys.RemoveKeylessUsersForTest(), userPubKeys)
 		checkGetTLFCryptKeyV3(t,
 			expected, expectedTLFCryptKey, wkb, rkb)
 	}

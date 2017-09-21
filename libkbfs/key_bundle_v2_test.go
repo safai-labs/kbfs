@@ -13,6 +13,8 @@ import (
 	"github.com/keybase/go-codec/codec"
 	"github.com/keybase/kbfs/kbfscodec"
 	"github.com/keybase/kbfs/kbfscrypto"
+	"github.com/keybase/kbfs/kbfshash"
+	"github.com/keybase/kbfs/kbfsmd"
 	"github.com/stretchr/testify/require"
 )
 
@@ -110,16 +112,16 @@ func TestRemoveDevicesNotInV2(t *testing.T) {
 	}, udkimV2)
 
 	require.Equal(t, ServerHalfRemovalInfo{
-		uid1: userServerHalfRemovalInfo{
-			userRemoved: true,
-			deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+		uid1: UserServerHalfRemovalInfo{
+			UserRemoved: true,
+			DeviceServerHalfIDs: kbfsmd.DeviceServerHalfRemovalInfo{
 				key1a: []TLFCryptKeyServerHalfID{id1a},
 				key1b: []TLFCryptKeyServerHalfID{id1b},
 			},
 		},
-		uid2: userServerHalfRemovalInfo{
-			userRemoved: false,
-			deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+		uid2: UserServerHalfRemovalInfo{
+			UserRemoved: false,
+			DeviceServerHalfIDs: kbfsmd.DeviceServerHalfRemovalInfo{
 				key2b: []TLFCryptKeyServerHalfID{id2b},
 			},
 		},
@@ -178,21 +180,21 @@ func TestRemoveLastDeviceV2(t *testing.T) {
 	}, udkimV2)
 
 	require.Equal(t, ServerHalfRemovalInfo{
-		uid1: userServerHalfRemovalInfo{
-			userRemoved: false,
-			deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+		uid1: UserServerHalfRemovalInfo{
+			UserRemoved: false,
+			DeviceServerHalfIDs: kbfsmd.DeviceServerHalfRemovalInfo{
 				key1: []TLFCryptKeyServerHalfID{id1},
 			},
 		},
-		uid2: userServerHalfRemovalInfo{
-			userRemoved: true,
-			deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+		uid2: UserServerHalfRemovalInfo{
+			UserRemoved: true,
+			DeviceServerHalfIDs: kbfsmd.DeviceServerHalfRemovalInfo{
 				key2: []TLFCryptKeyServerHalfID{id2},
 			},
 		},
-		uid4: userServerHalfRemovalInfo{
-			userRemoved:         true,
-			deviceServerHalfIDs: deviceServerHalfRemovalInfo{},
+		uid4: UserServerHalfRemovalInfo{
+			UserRemoved:         true,
+			DeviceServerHalfIDs: kbfsmd.DeviceServerHalfRemovalInfo{},
 		},
 	}, removalInfo)
 }
@@ -410,6 +412,41 @@ func TestToTLFReaderKeyBundleV3(t *testing.T) {
 	require.NoError(t, err)
 	if !reflect.DeepEqual(expectedRKBV3a, rkbV3) {
 		require.Equal(t, expectedRKBV3b, rkbV3)
+	}
+}
+
+type tlfCryptKeyInfoFuture struct {
+	TLFCryptKeyInfo
+	kbfscodec.Extra
+}
+
+func (cki tlfCryptKeyInfoFuture) toCurrent() TLFCryptKeyInfo {
+	return cki.TLFCryptKeyInfo
+}
+
+func (cki tlfCryptKeyInfoFuture) ToCurrentStruct() kbfscodec.CurrentStruct {
+	return cki.toCurrent()
+}
+
+func makeFakeTLFCryptKeyInfoFuture(t *testing.T) tlfCryptKeyInfoFuture {
+	hmac, err := kbfshash.DefaultHMAC(
+		[]byte("fake key"), []byte("fake buf"))
+	require.NoError(t, err)
+	cki := TLFCryptKeyInfo{
+		EncryptedTLFCryptKeyClientHalf{
+			kbfscrypto.EncryptedData{
+				Version: kbfscrypto.EncryptionSecretbox,
+				Data:    []byte("fake encrypted data"),
+				Nonce:   []byte("fake nonce"),
+			},
+		},
+		TLFCryptKeyServerHalfID{hmac},
+		5,
+		codec.UnknownFieldSetHandler{},
+	}
+	return tlfCryptKeyInfoFuture{
+		cki,
+		kbfscodec.MakeExtraOrBust("TLFCryptKeyInfo", t),
 	}
 }
 

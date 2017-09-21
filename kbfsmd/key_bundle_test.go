@@ -1,8 +1,8 @@
-// Copyright 2016 Keybase Inc. All rights reserved.
+// Copyright 2017 Keybase Inc. All rights reserved.
 // Use of this source code is governed by a BSD
 // license that can be found in the LICENSE file.
 
-package libkbfs
+package kbfsmd
 
 import (
 	"fmt"
@@ -10,50 +10,28 @@ import (
 	"testing"
 
 	"github.com/keybase/client/go/protocol/keybase1"
-	"github.com/keybase/go-codec/codec"
-	"github.com/keybase/kbfs/kbfscodec"
 	"github.com/keybase/kbfs/kbfscrypto"
 	"github.com/keybase/kbfs/kbfshash"
 	"github.com/stretchr/testify/require"
 )
 
-type tlfCryptKeyInfoFuture struct {
-	TLFCryptKeyInfo
-	kbfscodec.Extra
-}
-
-func (cki tlfCryptKeyInfoFuture) toCurrent() TLFCryptKeyInfo {
-	return cki.TLFCryptKeyInfo
-}
-
-func (cki tlfCryptKeyInfoFuture) ToCurrentStruct() kbfscodec.CurrentStruct {
-	return cki.toCurrent()
-}
-
-func makeFakeTLFCryptKeyInfoFuture(t *testing.T) tlfCryptKeyInfoFuture {
-	hmac, err := kbfshash.DefaultHMAC(
-		[]byte("fake key"), []byte("fake buf"))
-	require.NoError(t, err)
-	cki := TLFCryptKeyInfo{
-		EncryptedTLFCryptKeyClientHalf{
-			kbfscrypto.EncryptedData{
-				Version: kbfscrypto.EncryptionSecretbox,
-				Data:    []byte("fake encrypted data"),
-				Nonce:   []byte("fake nonce"),
-			},
-		},
-		TLFCryptKeyServerHalfID{hmac},
-		5,
-		codec.UnknownFieldSetHandler{},
+// getTLFCryptKeyServerHalfID implements the Crypto interface for CryptoCommon.
+func getTLFCryptKeyServerHalfID(
+	user keybase1.UID, devicePubKey kbfscrypto.CryptPublicKey,
+	serverHalf kbfscrypto.TLFCryptKeyServerHalf) (
+	TLFCryptKeyServerHalfID, error) {
+	key, err := serverHalf.MarshalBinary()
+	if err != nil {
+		return TLFCryptKeyServerHalfID{}, err
 	}
-	return tlfCryptKeyInfoFuture{
-		cki,
-		kbfscodec.MakeExtraOrBust("TLFCryptKeyInfo", t),
+	data := append(user.ToBytes(), devicePubKey.KID().ToBytes()...)
+	hmac, err := kbfshash.DefaultHMAC(key, data)
+	if err != nil {
+		return TLFCryptKeyServerHalfID{}, err
 	}
-}
-
-func TestTLFCryptKeyInfoUnknownFields(t *testing.T) {
-	testStructUnknownFields(t, makeFakeTLFCryptKeyInfoFuture(t))
+	return TLFCryptKeyServerHalfID{
+		ID: hmac,
+	}, nil
 }
 
 func TestUserServerHalfRemovalInfoAddGeneration(t *testing.T) {
@@ -70,55 +48,53 @@ func TestUserServerHalfRemovalInfoAddGeneration(t *testing.T) {
 	half2c := kbfscrypto.MakeTLFCryptKeyServerHalf([32]byte{0x6})
 
 	uid := keybase1.MakeTestUID(0x1)
-	codec := kbfscodec.NewMsgpack()
-	crypto := MakeCryptoCommon(codec)
-	id1a, err := crypto.GetTLFCryptKeyServerHalfID(uid, key1, half1a)
+	id1a, err := getTLFCryptKeyServerHalfID(uid, key1, half1a)
 	require.NoError(t, err)
-	id1b, err := crypto.GetTLFCryptKeyServerHalfID(uid, key1, half1b)
+	id1b, err := getTLFCryptKeyServerHalfID(uid, key1, half1b)
 	require.NoError(t, err)
-	id1c, err := crypto.GetTLFCryptKeyServerHalfID(uid, key1, half1c)
+	id1c, err := getTLFCryptKeyServerHalfID(uid, key1, half1c)
 	require.NoError(t, err)
-	id2a, err := crypto.GetTLFCryptKeyServerHalfID(uid, key2, half2a)
+	id2a, err := getTLFCryptKeyServerHalfID(uid, key2, half2a)
 	require.NoError(t, err)
-	id2b, err := crypto.GetTLFCryptKeyServerHalfID(uid, key2, half2b)
+	id2b, err := getTLFCryptKeyServerHalfID(uid, key2, half2b)
 	require.NoError(t, err)
-	id2c, err := crypto.GetTLFCryptKeyServerHalfID(uid, key2, half2c)
+	id2c, err := getTLFCryptKeyServerHalfID(uid, key2, half2c)
 	require.NoError(t, err)
 
 	// Required because addGeneration may modify its object even
 	// if it returns an error.
-	makeInfo := func(good bool) userServerHalfRemovalInfo {
+	makeInfo := func(good bool) UserServerHalfRemovalInfo {
 		var key2IDs []TLFCryptKeyServerHalfID
 		if good {
 			key2IDs = []TLFCryptKeyServerHalfID{id2a, id2b}
 		} else {
 			key2IDs = []TLFCryptKeyServerHalfID{id2a}
 		}
-		return userServerHalfRemovalInfo{
-			userRemoved: true,
-			deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+		return UserServerHalfRemovalInfo{
+			UserRemoved: true,
+			DeviceServerHalfIDs: DeviceServerHalfRemovalInfo{
 				key1: {id1a, id1b},
 				key2: key2IDs,
 			},
 		}
 	}
 
-	genInfo := userServerHalfRemovalInfo{
-		userRemoved: false,
+	genInfo := UserServerHalfRemovalInfo{
+		UserRemoved: false,
 	}
 
 	err = makeInfo(true).addGeneration(uid, genInfo)
 	require.Error(t, err)
-	require.True(t, strings.HasPrefix(err.Error(), "userRemoved=true"),
+	require.True(t, strings.HasPrefix(err.Error(), "UserRemoved=true"),
 		"err=%v", err)
 
-	genInfo.userRemoved = true
+	genInfo.UserRemoved = true
 	err = makeInfo(true).addGeneration(uid, genInfo)
 	require.Error(t, err)
 	require.True(t, strings.HasPrefix(err.Error(), "device count=2"),
 		"err=%v", err)
 
-	genInfo.deviceServerHalfIDs = deviceServerHalfRemovalInfo{
+	genInfo.DeviceServerHalfIDs = DeviceServerHalfRemovalInfo{
 		key1: {id1c},
 		key2: {id2c},
 	}
@@ -130,7 +106,7 @@ func TestUserServerHalfRemovalInfoAddGeneration(t *testing.T) {
 			strings.HasPrefix(err.Error(), "expected 1 keys"),
 		"err=%v", err)
 
-	genInfo.deviceServerHalfIDs = deviceServerHalfRemovalInfo{
+	genInfo.DeviceServerHalfIDs = DeviceServerHalfRemovalInfo{
 		key1: {},
 		key2: {},
 	}
@@ -139,7 +115,7 @@ func TestUserServerHalfRemovalInfoAddGeneration(t *testing.T) {
 	require.True(t, strings.HasPrefix(err.Error(),
 		"expected exactly one key"), "err=%v", err)
 
-	genInfo.deviceServerHalfIDs = deviceServerHalfRemovalInfo{
+	genInfo.DeviceServerHalfIDs = DeviceServerHalfRemovalInfo{
 		key3: {id1c},
 		key4: {id2c},
 	}
@@ -148,16 +124,16 @@ func TestUserServerHalfRemovalInfoAddGeneration(t *testing.T) {
 	require.True(t, strings.HasPrefix(err.Error(),
 		"no generation info"), "err=%v", err)
 
-	genInfo.deviceServerHalfIDs = deviceServerHalfRemovalInfo{
+	genInfo.DeviceServerHalfIDs = DeviceServerHalfRemovalInfo{
 		key1: {id1c},
 		key2: {id2c},
 	}
 	info := makeInfo(true)
 	err = info.addGeneration(uid, genInfo)
 	require.NoError(t, err)
-	require.Equal(t, userServerHalfRemovalInfo{
-		userRemoved: true,
-		deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+	require.Equal(t, UserServerHalfRemovalInfo{
+		UserRemoved: true,
+		DeviceServerHalfIDs: DeviceServerHalfRemovalInfo{
 			key1: {id1a, id1b, id1c},
 			key2: {id2a, id2b, id2c},
 		},
@@ -179,35 +155,33 @@ func TestServerHalfRemovalInfoAddGeneration(t *testing.T) {
 	uid2 := keybase1.MakeTestUID(0x2)
 	uid3 := keybase1.MakeTestUID(0x3)
 
-	codec := kbfscodec.NewMsgpack()
-	crypto := MakeCryptoCommon(codec)
-	id1a, err := crypto.GetTLFCryptKeyServerHalfID(uid1, key1, half1a)
+	id1a, err := getTLFCryptKeyServerHalfID(uid1, key1, half1a)
 	require.NoError(t, err)
-	id1b, err := crypto.GetTLFCryptKeyServerHalfID(uid1, key1, half1b)
+	id1b, err := getTLFCryptKeyServerHalfID(uid1, key1, half1b)
 	require.NoError(t, err)
-	id1c, err := crypto.GetTLFCryptKeyServerHalfID(uid1, key1, half1c)
+	id1c, err := getTLFCryptKeyServerHalfID(uid1, key1, half1c)
 	require.NoError(t, err)
-	id2a, err := crypto.GetTLFCryptKeyServerHalfID(uid1, key2, half2a)
+	id2a, err := getTLFCryptKeyServerHalfID(uid1, key2, half2a)
 	require.NoError(t, err)
-	id2b, err := crypto.GetTLFCryptKeyServerHalfID(uid1, key2, half2b)
+	id2b, err := getTLFCryptKeyServerHalfID(uid1, key2, half2b)
 	require.NoError(t, err)
-	id2c, err := crypto.GetTLFCryptKeyServerHalfID(uid1, key2, half2c)
+	id2c, err := getTLFCryptKeyServerHalfID(uid1, key2, half2c)
 	require.NoError(t, err)
 
 	// Required because addGeneration may modify its object even
 	// if it returns an error.
 	makeInfo := func() ServerHalfRemovalInfo {
 		return ServerHalfRemovalInfo{
-			uid1: userServerHalfRemovalInfo{
-				userRemoved: true,
-				deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+			uid1: UserServerHalfRemovalInfo{
+				UserRemoved: true,
+				DeviceServerHalfIDs: DeviceServerHalfRemovalInfo{
 					key1: {id1a, id1b},
 					key2: {id2a, id2b},
 				},
 			},
-			uid2: userServerHalfRemovalInfo{
-				userRemoved: false,
-				deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+			uid2: UserServerHalfRemovalInfo{
+				UserRemoved: false,
+				DeviceServerHalfIDs: DeviceServerHalfRemovalInfo{
 					key1: {id1a, id1c},
 					key2: {id2a, id2c},
 				},
@@ -216,68 +190,68 @@ func TestServerHalfRemovalInfoAddGeneration(t *testing.T) {
 	}
 
 	genInfo := ServerHalfRemovalInfo{
-		uid1: userServerHalfRemovalInfo{
-			userRemoved: true,
-			deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+		uid1: UserServerHalfRemovalInfo{
+			UserRemoved: true,
+			DeviceServerHalfIDs: DeviceServerHalfRemovalInfo{
 				key1: {id1c},
 				key2: {id2c},
 			},
 		},
 	}
 
-	err = makeInfo().addGeneration(genInfo)
+	err = makeInfo().AddGeneration(genInfo)
 	require.Error(t, err)
 	require.True(t, strings.HasPrefix(err.Error(), "user count=2"),
 		"err=%v", err)
 
-	genInfo[uid3] = userServerHalfRemovalInfo{
-		userRemoved: false,
-		deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+	genInfo[uid3] = UserServerHalfRemovalInfo{
+		UserRemoved: false,
+		DeviceServerHalfIDs: DeviceServerHalfRemovalInfo{
 			key1: {id1b},
 			key2: {id2b},
 		},
 	}
 
-	err = makeInfo().addGeneration(genInfo)
+	err = makeInfo().AddGeneration(genInfo)
 	require.Error(t, err)
 	require.True(t, strings.HasPrefix(err.Error(), "no generation info"),
 		"err=%v", err)
 
-	genInfo[uid2] = userServerHalfRemovalInfo{
-		userRemoved: true,
-		deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+	genInfo[uid2] = UserServerHalfRemovalInfo{
+		UserRemoved: true,
+		DeviceServerHalfIDs: DeviceServerHalfRemovalInfo{
 			key1: {id1b},
 			key2: {id2b},
 		},
 	}
 	delete(genInfo, uid3)
 
-	err = makeInfo().addGeneration(genInfo)
+	err = makeInfo().AddGeneration(genInfo)
 	require.Error(t, err)
-	require.True(t, strings.HasPrefix(err.Error(), "userRemoved=false"),
+	require.True(t, strings.HasPrefix(err.Error(), "UserRemoved=false"),
 		"err=%v", err)
 
-	genInfo[uid2] = userServerHalfRemovalInfo{
-		userRemoved: false,
-		deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+	genInfo[uid2] = UserServerHalfRemovalInfo{
+		UserRemoved: false,
+		DeviceServerHalfIDs: DeviceServerHalfRemovalInfo{
 			key1: {id1b},
 			key2: {id2b},
 		},
 	}
 	info := makeInfo()
-	err = info.addGeneration(genInfo)
+	err = info.AddGeneration(genInfo)
 	require.NoError(t, err)
 	require.Equal(t, ServerHalfRemovalInfo{
-		uid1: userServerHalfRemovalInfo{
-			userRemoved: true,
-			deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+		uid1: UserServerHalfRemovalInfo{
+			UserRemoved: true,
+			DeviceServerHalfIDs: DeviceServerHalfRemovalInfo{
 				key1: {id1a, id1b, id1c},
 				key2: {id2a, id2b, id2c},
 			},
 		},
-		uid2: userServerHalfRemovalInfo{
-			userRemoved: false,
-			deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+		uid2: UserServerHalfRemovalInfo{
+			UserRemoved: false,
+			DeviceServerHalfIDs: DeviceServerHalfRemovalInfo{
 				key1: {id1a, id1c, id1b},
 				key2: {id2a, id2c, id2b},
 			},
@@ -299,20 +273,18 @@ func TestServerHalfRemovalInfoMergeUsers(t *testing.T) {
 	uid3 := keybase1.MakeTestUID(0x3)
 	uid4 := keybase1.MakeTestUID(0x4)
 
-	codec := kbfscodec.NewMsgpack()
-	crypto := MakeCryptoCommon(codec)
-	id1a, err := crypto.GetTLFCryptKeyServerHalfID(uid1, key1, half1a)
+	id1a, err := getTLFCryptKeyServerHalfID(uid1, key1, half1a)
 	require.NoError(t, err)
-	id1b, err := crypto.GetTLFCryptKeyServerHalfID(uid1, key1, half1b)
+	id1b, err := getTLFCryptKeyServerHalfID(uid1, key1, half1b)
 	require.NoError(t, err)
-	id2a, err := crypto.GetTLFCryptKeyServerHalfID(uid1, key2, half2a)
+	id2a, err := getTLFCryptKeyServerHalfID(uid1, key2, half2a)
 	require.NoError(t, err)
-	id2b, err := crypto.GetTLFCryptKeyServerHalfID(uid1, key2, half2b)
+	id2b, err := getTLFCryptKeyServerHalfID(uid1, key2, half2b)
 	require.NoError(t, err)
 
-	userRemovalInfo := userServerHalfRemovalInfo{
-		userRemoved: true,
-		deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+	userRemovalInfo := UserServerHalfRemovalInfo{
+		UserRemoved: true,
+		DeviceServerHalfIDs: DeviceServerHalfRemovalInfo{
 			key1: {id1a, id1b},
 			key2: {id2a, id2b},
 		},
@@ -328,7 +300,7 @@ func TestServerHalfRemovalInfoMergeUsers(t *testing.T) {
 		uid3: userRemovalInfo,
 	}
 
-	_, err = info1.mergeUsers(info2)
+	_, err = info1.MergeUsers(info2)
 	require.Error(t, err)
 	require.True(t, strings.HasPrefix(err.Error(),
 		fmt.Sprintf("user %s is in both", uid1)),
@@ -339,7 +311,7 @@ func TestServerHalfRemovalInfoMergeUsers(t *testing.T) {
 		uid4: userRemovalInfo,
 	}
 
-	info3, err := info1.mergeUsers(info2)
+	info3, err := info1.MergeUsers(info2)
 	require.NoError(t, err)
 	require.Equal(t, ServerHalfRemovalInfo{
 		uid1: userRemovalInfo,

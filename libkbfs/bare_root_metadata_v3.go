@@ -734,9 +734,9 @@ func (md *BareRootMetadataV3) RevokeRemovedDevices(
 		return nil, err
 	}
 
-	wRemovalInfo := wkb.Keys.removeDevicesNotIn(updatedWriterKeys)
-	rRemovalInfo := rkb.Keys.removeDevicesNotIn(updatedReaderKeys)
-	return wRemovalInfo.mergeUsers(rRemovalInfo)
+	wRemovalInfo := wkb.Keys.RemoveDevicesNotIn(updatedWriterKeys)
+	rRemovalInfo := rkb.Keys.RemoveDevicesNotIn(updatedReaderKeys)
+	return wRemovalInfo.MergeUsers(rRemovalInfo)
 }
 
 // GetUserDevicePublicKeys implements the BareRootMetadata interface
@@ -753,7 +753,7 @@ func (md *BareRootMetadataV3) GetUserDevicePublicKeys(extra ExtraMetadata) (
 		return nil, nil, err
 	}
 
-	return wkb.Keys.toPublicKeys(), rkb.Keys.toPublicKeys(), nil
+	return wkb.Keys.ToPublicKeys(), rkb.Keys.ToPublicKeys(), nil
 }
 
 // GetTLFCryptKeyParams implements the BareRootMetadata interface for BareRootMetadataV3.
@@ -1195,7 +1195,7 @@ func (md *BareRootMetadataV3) updateKeyBundles(crypto cryptoPure,
 	if len(updatedWriterKeys) > 0 {
 		newWriterIndex = len(wkb.TLFEphemeralPublicKeys)
 	}
-	wServerHalves, err := wkb.Keys.fillInUserInfos(
+	wServerHalves, err := wkb.Keys.FillInUserInfos(
 		crypto, newWriterIndex, updatedWriterKeys,
 		ePrivKey, tlfCryptKey)
 	if err != nil {
@@ -1212,7 +1212,7 @@ func (md *BareRootMetadataV3) updateKeyBundles(crypto cryptoPure,
 	if len(updatedReaderKeys) > 0 {
 		newReaderIndex = len(rkb.TLFEphemeralPublicKeys)
 	}
-	rServerHalves, err := rkb.Keys.fillInUserInfos(
+	rServerHalves, err := rkb.Keys.FillInUserInfos(
 		crypto, newReaderIndex, updatedReaderKeys,
 		ePrivKey, tlfCryptKey)
 	if err != nil {
@@ -1225,7 +1225,7 @@ func (md *BareRootMetadataV3) updateKeyBundles(crypto cryptoPure,
 			append(rkb.TLFEphemeralPublicKeys, ePubKey)
 	}
 
-	return wServerHalves.mergeUsers(rServerHalves)
+	return wServerHalves.MergeUsers(rServerHalves)
 }
 
 // AddKeyGeneration implements the MutableBareRootMetadata interface
@@ -1267,14 +1267,14 @@ func (md *BareRootMetadataV3) AddKeyGeneration(codec kbfscodec.Codec,
 			return nil, nil, errors.New("Invalid curr extra metadata")
 		}
 
-		existingWriterKeys := currExtraV3.wkb.Keys.toPublicKeys()
+		existingWriterKeys := currExtraV3.wkb.Keys.ToPublicKeys()
 		if !existingWriterKeys.Equals(updatedWriterKeys) {
 			return nil, nil, fmt.Errorf(
 				"existingWriterKeys=%+v != updatedWriterKeys=%+v",
 				existingWriterKeys, updatedWriterKeys)
 		}
 
-		existingReaderKeys := currExtraV3.rkb.Keys.toPublicKeys()
+		existingReaderKeys := currExtraV3.rkb.Keys.ToPublicKeys()
 		if !existingReaderKeys.Equals(updatedReaderKeys) {
 			return nil, nil, fmt.Errorf(
 				"existingReaderKeys=%+v != updatedReaderKeys=%+v",

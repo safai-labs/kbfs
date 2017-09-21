@@ -11,6 +11,7 @@ import (
 	"github.com/keybase/go-codec/codec"
 	"github.com/keybase/kbfs/kbfscodec"
 	"github.com/keybase/kbfs/kbfscrypto"
+	"github.com/keybase/kbfs/kbfsmd"
 	"github.com/stretchr/testify/require"
 )
 
@@ -119,7 +120,7 @@ func TestRemoveDevicesNotInV3(t *testing.T) {
 		},
 	}
 
-	removalInfo := udkimV3.removeDevicesNotIn(UserDevicePublicKeys{
+	removalInfo := udkimV3.RemoveDevicesNotIn(UserDevicePublicKeys{
 		uid2: {key2a: true, key2c: true},
 		uid3: {key3a: true},
 	})
@@ -144,16 +145,16 @@ func TestRemoveDevicesNotInV3(t *testing.T) {
 	}, udkimV3)
 
 	require.Equal(t, ServerHalfRemovalInfo{
-		uid1: userServerHalfRemovalInfo{
-			userRemoved: true,
-			deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+		uid1: kbfsmd.UserServerHalfRemovalInfo{
+			UserRemoved: true,
+			DeviceServerHalfIDs: kbfsmd.DeviceServerHalfRemovalInfo{
 				key1a: []TLFCryptKeyServerHalfID{id1a},
 				key1b: []TLFCryptKeyServerHalfID{id1b},
 			},
 		},
-		uid2: userServerHalfRemovalInfo{
-			userRemoved: false,
-			deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+		uid2: kbfsmd.UserServerHalfRemovalInfo{
+			UserRemoved: false,
+			DeviceServerHalfIDs: kbfsmd.DeviceServerHalfRemovalInfo{
 				key2b: []TLFCryptKeyServerHalfID{id2b},
 			},
 		},
@@ -201,7 +202,7 @@ func TestRemoveLastDeviceV3(t *testing.T) {
 		uid4: DeviceKeyInfoMapV3{},
 	}
 
-	removalInfo := udkimV3.removeDevicesNotIn(UserDevicePublicKeys{
+	removalInfo := udkimV3.RemoveDevicesNotIn(UserDevicePublicKeys{
 		uid1: {},
 		uid3: {},
 	})
@@ -212,21 +213,21 @@ func TestRemoveLastDeviceV3(t *testing.T) {
 	}, udkimV3)
 
 	require.Equal(t, ServerHalfRemovalInfo{
-		uid1: userServerHalfRemovalInfo{
-			userRemoved: false,
-			deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+		uid1: kbfsmd.UserServerHalfRemovalInfo{
+			UserRemoved: false,
+			DeviceServerHalfIDs: kbfsmd.DeviceServerHalfRemovalInfo{
 				key1: []TLFCryptKeyServerHalfID{id1},
 			},
 		},
-		uid2: userServerHalfRemovalInfo{
-			userRemoved: true,
-			deviceServerHalfIDs: deviceServerHalfRemovalInfo{
+		uid2: kbfsmd.UserServerHalfRemovalInfo{
+			UserRemoved: true,
+			DeviceServerHalfIDs: kbfsmd.DeviceServerHalfRemovalInfo{
 				key2: []TLFCryptKeyServerHalfID{id2},
 			},
 		},
-		uid4: userServerHalfRemovalInfo{
-			userRemoved:         true,
-			deviceServerHalfIDs: deviceServerHalfRemovalInfo{},
+		uid4: kbfsmd.UserServerHalfRemovalInfo{
+			UserRemoved:         true,
+			DeviceServerHalfIDs: kbfsmd.DeviceServerHalfRemovalInfo{},
 		},
 	}, removalInfo)
 }

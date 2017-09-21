@@ -5,10 +5,6 @@
 package libkbfs
 
 import (
-	"fmt"
-
-	"github.com/keybase/client/go/protocol/keybase1"
-	"github.com/keybase/kbfs/kbfscrypto"
 	"github.com/keybase/kbfs/kbfsmd"
 )
 
@@ -21,167 +17,16 @@ type TLFCryptKeyInfo = kbfsmd.TLFCryptKeyInfo
 // DevicePublicKeys is a temporary alias.
 type DevicePublicKeys = kbfsmd.DevicePublicKeys
 
-// UserDevicePublicKeys is a map from users to that user's set of devices.
-type UserDevicePublicKeys map[keybase1.UID]DevicePublicKeys
-
-// removeKeylessUsersForTest returns a new UserDevicePublicKeys objects with
-// all the users with an empty DevicePublicKeys removed.
-func (udpk UserDevicePublicKeys) removeKeylessUsersForTest() UserDevicePublicKeys {
-	udpkRemoved := make(UserDevicePublicKeys)
-	for u, dpk := range udpk {
-		if len(dpk) > 0 {
-			udpkRemoved[u] = dpk
-		}
-	}
-	return udpkRemoved
-}
-
-// Equals returns whether both sets of users are equal, and they all
-// have corresponding equal sets of keys.
-func (udpk UserDevicePublicKeys) Equals(other UserDevicePublicKeys) bool {
-	if len(udpk) != len(other) {
-		return false
-	}
-
-	for u, dpk := range udpk {
-		if !dpk.Equals(other[u]) {
-			return false
-		}
-	}
-
-	return true
-}
+// UserDevicePublicKeys is a temporary alias.
+type UserDevicePublicKeys = kbfsmd.UserDevicePublicKeys
 
 // DeviceKeyServerHalves is a temporary alias.
 type DeviceKeyServerHalves = kbfsmd.DeviceKeyServerHalves
 
 // UserDeviceKeyServerHalves maps a user's keybase UID to their
 // DeviceServerHalves map.
-type UserDeviceKeyServerHalves map[keybase1.UID]DeviceKeyServerHalves
+type UserDeviceKeyServerHalves = kbfsmd.UserDeviceKeyServerHalves
 
-// mergeUsers returns a UserDeviceKeyServerHalves that contains all
-// the users in serverHalves and other, which must be disjoint. This
-// isn't a deep copy.
-func (serverHalves UserDeviceKeyServerHalves) mergeUsers(
-	other UserDeviceKeyServerHalves) (UserDeviceKeyServerHalves, error) {
-	merged := make(UserDeviceKeyServerHalves,
-		len(serverHalves)+len(other))
-	for uid, deviceServerHalves := range serverHalves {
-		merged[uid] = deviceServerHalves
-	}
-	for uid, deviceServerHalves := range other {
-		if _, ok := merged[uid]; ok {
-			return nil, fmt.Errorf(
-				"user %s is in both UserDeviceKeyServerHalves",
-				uid)
-		}
-		merged[uid] = deviceServerHalves
-	}
-	return merged, nil
-}
+type ServerHalfRemovalInfo = kbfsmd.ServerHalfRemovalInfo
 
-type deviceServerHalfRemovalInfo map[kbfscrypto.CryptPublicKey][]TLFCryptKeyServerHalfID
-
-// userServerHalfRemovalInfo contains a map from devices (identified
-// by its crypt public key) to a list of IDs for key server halves to
-// remove (one per key generation). For logging purposes, it also
-// contains a bool indicating whether all of the user's devices were
-// removed.
-type userServerHalfRemovalInfo struct {
-	userRemoved         bool
-	deviceServerHalfIDs deviceServerHalfRemovalInfo
-}
-
-// addGeneration merges the keys in genInfo (which must be one per
-// device) into ri. genInfo must have the same userRemoved value and
-// keys as ri.
-func (ri userServerHalfRemovalInfo) addGeneration(
-	uid keybase1.UID, genInfo userServerHalfRemovalInfo) error {
-	if ri.userRemoved != genInfo.userRemoved {
-		return fmt.Errorf(
-			"userRemoved=%t != generation userRemoved=%t for user %s",
-			ri.userRemoved, genInfo.userRemoved, uid)
-	}
-
-	if len(ri.deviceServerHalfIDs) != len(genInfo.deviceServerHalfIDs) {
-		return fmt.Errorf(
-			"device count=%d != generation device count=%d for user %s",
-			len(ri.deviceServerHalfIDs),
-			len(genInfo.deviceServerHalfIDs), uid)
-	}
-
-	idCount := -1
-	for key, serverHalfIDs := range genInfo.deviceServerHalfIDs {
-		if idCount == -1 {
-			idCount = len(ri.deviceServerHalfIDs[key])
-		} else {
-			localIDCount := len(ri.deviceServerHalfIDs[key])
-			if localIDCount != idCount {
-				return fmt.Errorf(
-					"expected %d keys, got %d for user %s and device %s",
-					idCount, localIDCount, uid, key)
-			}
-		}
-
-		if len(serverHalfIDs) != 1 {
-			return fmt.Errorf(
-				"expected exactly one key, got %d for user %s and device %s",
-				len(serverHalfIDs), uid, key)
-		}
-		if _, ok := ri.deviceServerHalfIDs[key]; !ok {
-			return fmt.Errorf(
-				"no generation info for user %s and device %s",
-				uid, key)
-		}
-		ri.deviceServerHalfIDs[key] = append(
-			ri.deviceServerHalfIDs[key], serverHalfIDs[0])
-	}
-
-	return nil
-}
-
-// ServerHalfRemovalInfo is a map from users and devices to a list of
-// server half IDs to remove from the server.
-type ServerHalfRemovalInfo map[keybase1.UID]userServerHalfRemovalInfo
-
-// addGeneration merges the keys in genInfo (which must be one per
-// device) into info. genInfo must have the same users as info.
-func (info ServerHalfRemovalInfo) addGeneration(
-	genInfo ServerHalfRemovalInfo) error {
-	if len(info) != len(genInfo) {
-		return fmt.Errorf(
-			"user count=%d != generation user count=%d",
-			len(info), len(genInfo))
-	}
-
-	for uid, removalInfo := range genInfo {
-		if _, ok := info[uid]; !ok {
-			return fmt.Errorf("no generation info for user %s", uid)
-		}
-		err := info[uid].addGeneration(uid, removalInfo)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// mergeUsers returns a ServerHalfRemovalInfo that contains all the
-// users in info and other, which must be disjoint. This isn't a deep
-// copy.
-func (info ServerHalfRemovalInfo) mergeUsers(
-	other ServerHalfRemovalInfo) (ServerHalfRemovalInfo, error) {
-	merged := make(ServerHalfRemovalInfo, len(info)+len(other))
-	for uid, removalInfo := range info {
-		merged[uid] = removalInfo
-	}
-	for uid, removalInfo := range other {
-		if _, ok := merged[uid]; ok {
-			return nil, fmt.Errorf(
-				"user %s is in both ServerHalfRemovalInfos",
-				uid)
-		}
-		merged[uid] = removalInfo
-	}
-	return merged, nil
-}
+type UserServerHalfRemovalInfo = kbfsmd.UserServerHalfRemovalInfo

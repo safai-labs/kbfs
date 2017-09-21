@@ -84,3 +84,98 @@ func (dkimV3 DeviceKeyInfoMapV3) ToPublicKeys() DevicePublicKeys {
 	}
 	return publicKeys
 }
+
+// UserDeviceKeyInfoMapV3 maps a user's keybase UID to their
+// DeviceKeyInfoMapV3.
+type UserDeviceKeyInfoMapV3 map[keybase1.UID]DeviceKeyInfoMapV3
+
+// Size implements the cache.Measurable interface.
+func (udkimV3 UserDeviceKeyInfoMapV3) Size() int {
+	// statically-sized part
+	mapSize := cache.StaticSizeOfMapWithSize(
+		cache.PtrSize, cache.PtrSize, len(udkimV3))
+
+	// go through pointer type content
+	var contentSize int
+	for k, v := range udkimV3 {
+		contentSize += len(k) + v.Size()
+	}
+
+	return mapSize + contentSize
+}
+
+func (udkimV3 UserDeviceKeyInfoMapV3) ToPublicKeys() UserDevicePublicKeys {
+	publicKeys := make(UserDevicePublicKeys, len(udkimV3))
+	for u, dkimV3 := range udkimV3 {
+		publicKeys[u] = dkimV3.ToPublicKeys()
+	}
+	return publicKeys
+}
+
+// RemoveDevicesNotIn removes any info for any device that is not
+// contained in the given map of users and devices.
+func (udkimV3 UserDeviceKeyInfoMapV3) RemoveDevicesNotIn(
+	updatedUserKeys UserDevicePublicKeys) ServerHalfRemovalInfo {
+	removalInfo := make(ServerHalfRemovalInfo)
+	for uid, dkim := range udkimV3 {
+		userRemoved := false
+		deviceServerHalfIDs := make(DeviceServerHalfRemovalInfo)
+		if deviceKeys, ok := updatedUserKeys[uid]; ok {
+			for key, info := range dkim {
+				if !deviceKeys[key] {
+					delete(dkim, key)
+					deviceServerHalfIDs[key] = append(
+						deviceServerHalfIDs[key],
+						info.ServerHalfID)
+				}
+			}
+
+			if len(deviceServerHalfIDs) == 0 {
+				continue
+			}
+		} else {
+			// The user was completely removed, which
+			// shouldn't happen but might as well make it
+			// work just in case.
+			userRemoved = true
+			for key, info := range dkim {
+				deviceServerHalfIDs[key] = append(
+					deviceServerHalfIDs[key],
+					info.ServerHalfID)
+			}
+
+			delete(udkimV3, uid)
+		}
+
+		removalInfo[uid] = UserServerHalfRemovalInfo{
+			UserRemoved:         userRemoved,
+			DeviceServerHalfIDs: deviceServerHalfIDs,
+		}
+	}
+
+	return removalInfo
+}
+
+func (udkimV3 UserDeviceKeyInfoMapV3) FillInUserInfos(
+	crypto cryptoPure, newIndex int, updatedUserKeys UserDevicePublicKeys,
+	ePrivKey kbfscrypto.TLFEphemeralPrivateKey,
+	tlfCryptKey kbfscrypto.TLFCryptKey) (
+	serverHalves UserDeviceKeyServerHalves, err error) {
+	serverHalves = make(UserDeviceKeyServerHalves, len(updatedUserKeys))
+	for u, updatedDeviceKeys := range updatedUserKeys {
+		if _, ok := udkimV3[u]; !ok {
+			udkimV3[u] = DeviceKeyInfoMapV3{}
+		}
+
+		deviceServerHalves, err := udkimV3[u].FillInDeviceInfos(
+			crypto, u, tlfCryptKey, ePrivKey, newIndex,
+			updatedDeviceKeys)
+		if err != nil {
+			return nil, err
+		}
+		if len(deviceServerHalves) > 0 {
+			serverHalves[u] = deviceServerHalves
+		}
+	}
+	return serverHalves, nil
+}

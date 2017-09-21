@@ -665,7 +665,7 @@ func (md *BareRootMetadataV2) RevokeRemovedDevices(
 		if wRemovalInfo == nil {
 			wRemovalInfo = removalInfo
 		} else {
-			err := wRemovalInfo.addGeneration(removalInfo)
+			err := wRemovalInfo.AddGeneration(removalInfo)
 			if err != nil {
 				return nil, err
 			}
@@ -678,14 +678,14 @@ func (md *BareRootMetadataV2) RevokeRemovedDevices(
 		if rRemovalInfo == nil {
 			rRemovalInfo = removalInfo
 		} else {
-			err := rRemovalInfo.addGeneration(removalInfo)
+			err := rRemovalInfo.AddGeneration(removalInfo)
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	return wRemovalInfo.mergeUsers(rRemovalInfo)
+	return wRemovalInfo.MergeUsers(rRemovalInfo)
 }
 
 // getTLFKeyBundles returns the bundles for a given key generation.
@@ -1220,7 +1220,7 @@ func (md *BareRootMetadataV2) updateKeyGeneration(
 		return nil, err
 	}
 
-	serverHalves, err := wServerHalves.mergeUsers(rServerHalves)
+	serverHalves, err := wServerHalves.MergeUsers(rServerHalves)
 	if err != nil {
 		return nil, err
 	}
