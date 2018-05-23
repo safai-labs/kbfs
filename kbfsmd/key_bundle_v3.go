@@ -192,12 +192,7 @@ func writerUDKIMV2ToV3(codec kbfscodec.Codec, udkimV2 UserDeviceKeyInfoMapV2,
 					index, uid, kid)
 			}
 
-			dkimV3[kbfscrypto.MakeCryptPublicKey(kid)] = TLFCryptKeyInfoV3{
-				ClientHalf:             info.ClientHalf,
-				ServerHalfID:           info.ServerHalfID,
-				EPubKeyIndex:           index,
-				UnknownFieldSetHandler: info.UnknownFieldSetHandler,
-			}
+			dkimV3[kbfscrypto.MakeCryptPublicKey(kid)] = tlfCryptKeyInfoV2ToV3(info, index)
 		}
 		udkimV3[uid] = dkimV3
 	}

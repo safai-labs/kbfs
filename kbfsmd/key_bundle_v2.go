@@ -53,6 +53,15 @@ type TLFCryptKeyInfoV2 struct {
 	codec.UnknownFieldSetHandler
 }
 
+func tlfCryptKeyInfoV2ToV3(infoV2 TLFCryptKeyInfoV2, newEPubKeyIndex int) TLFCryptKeyInfoV3 {
+	return TLFCryptKeyInfoV3{
+		ClientHalf:             infoV2.ClientHalf,
+		ServerHalfID:           infoV2.ServerHalfID,
+		EPubKeyIndex:           newEPubKeyIndex,
+		UnknownFieldSetHandler: infoV2.UnknownFieldSetHandler,
+	}
+}
+
 // splitTLFCryptKeyV2 splits the given TLFCryptKey into two parts -- the
 // client-side part (which is encrypted with the given keys), and the
 // server-side part, which will be uploaded to the server.
@@ -448,13 +457,7 @@ func (rkg TLFReaderKeyGenerationsV2) ToTLFReaderKeyBundleV3(
 			default:
 				return TLFReaderKeyBundleV3{}, fmt.Errorf("Unknown key location %s", keyLocation)
 			}
-			dkimV3[kbfscrypto.MakeCryptPublicKey(kid)] = TLFCryptKeyInfoV3{
-				ClientHalf:             info.ClientHalf,
-				ServerHalfID:           info.ServerHalfID,
-				EPubKeyIndex:           newEPubKeyIndex,
-				UnknownFieldSetHandler: info.UnknownFieldSetHandler,
-			}
-
+			dkimV3[kbfscrypto.MakeCryptPublicKey(kid)] = tlfCryptKeyInfoV2ToV3(info, newEPubKeyIndex)
 		}
 		rkbV3.Keys[uid] = dkimV3
 	}
