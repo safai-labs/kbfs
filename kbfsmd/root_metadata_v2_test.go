@@ -64,7 +64,7 @@ func TestRootMetadataRevisionV2(t *testing.T) {
 	require.NoError(t, err)
 
 	// This should msgpack-encode as a uint8 (0xcc), and not an
-	// int8 (0xd0).
+	// int16 (0xd1).
 	brmd.Revision = 128
 
 	codec := kbfscodec.NewMsgpack()
