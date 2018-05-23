@@ -43,10 +43,61 @@ func (t EPubKeyLocationV2) String() string {
 	}
 }
 
+// TLFCryptKeyInfo is a per-device key half entry in the
+// TLF{Writer,Reader}KeyBundleV2.
+type TLFCryptKeyInfoV2 struct {
+	ClientHalf   kbfscrypto.EncryptedTLFCryptKeyClientHalf
+	ServerHalfID kbfscrypto.TLFCryptKeyServerHalfID
+	EPubKeyIndex int `codec:"i,omitempty"`
+
+	codec.UnknownFieldSetHandler
+}
+
+// splitTLFCryptKeyV2 splits the given TLFCryptKey into two parts -- the
+// client-side part (which is encrypted with the given keys), and the
+// server-side part, which will be uploaded to the server.
+func splitTLFCryptKeyV2(uid keybase1.UID,
+	tlfCryptKey kbfscrypto.TLFCryptKey,
+	ePrivKey kbfscrypto.TLFEphemeralPrivateKey, ePubIndex int,
+	pubKey kbfscrypto.CryptPublicKey) (
+	TLFCryptKeyInfoV2, kbfscrypto.TLFCryptKeyServerHalf, error) {
+	//    * create a new random server half
+	//    * mask it with the key to get the client half
+	//    * encrypt the client half
+	var serverHalf kbfscrypto.TLFCryptKeyServerHalf
+	serverHalf, err := kbfscrypto.MakeRandomTLFCryptKeyServerHalf()
+	if err != nil {
+		return TLFCryptKeyInfoV2{}, kbfscrypto.TLFCryptKeyServerHalf{}, err
+	}
+
+	clientHalf := kbfscrypto.MaskTLFCryptKey(serverHalf, tlfCryptKey)
+
+	var encryptedClientHalf kbfscrypto.EncryptedTLFCryptKeyClientHalf
+	encryptedClientHalf, err =
+		kbfscrypto.EncryptTLFCryptKeyClientHalf(ePrivKey, pubKey, clientHalf)
+	if err != nil {
+		return TLFCryptKeyInfoV2{}, kbfscrypto.TLFCryptKeyServerHalf{}, err
+	}
+
+	var serverHalfID kbfscrypto.TLFCryptKeyServerHalfID
+	serverHalfID, err =
+		kbfscrypto.MakeTLFCryptKeyServerHalfID(uid, pubKey, serverHalf)
+	if err != nil {
+		return TLFCryptKeyInfoV2{}, kbfscrypto.TLFCryptKeyServerHalf{}, err
+	}
+
+	clientInfo := TLFCryptKeyInfoV2{
+		ClientHalf:   encryptedClientHalf,
+		ServerHalfID: serverHalfID,
+		EPubKeyIndex: ePubIndex,
+	}
+	return clientInfo, serverHalf, nil
+}
+
 // GetEphemeralPublicKeyInfoV2 encapsulates all the ugly logic needed to
 // deal with the "negative hack" from
 // RootMetadataV2.UpdateKeyGeneration.
-func GetEphemeralPublicKeyInfoV2(info TLFCryptKeyInfo,
+func GetEphemeralPublicKeyInfoV2(info TLFCryptKeyInfoV2,
 	wkb TLFWriterKeyBundleV2, rkb TLFReaderKeyBundleV2) (
 	keyLocation EPubKeyLocationV2, index int,
 	ePubKey kbfscrypto.TLFEphemeralPublicKey, err error) {
@@ -74,7 +125,7 @@ func GetEphemeralPublicKeyInfoV2(info TLFCryptKeyInfo,
 // DeviceKeyInfoMapV2 is a map from a user devices (identified by the
 // KID of the corresponding device CryptPublicKey) to the
 // TLF's symmetric secret key information.
-type DeviceKeyInfoMapV2 map[keybase1.KID]TLFCryptKeyInfo
+type DeviceKeyInfoMapV2 map[keybase1.KID]TLFCryptKeyInfoV2
 
 func (dkimV2 DeviceKeyInfoMapV2) fillInDeviceInfos(
 	uid keybase1.UID, tlfCryptKey kbfscrypto.TLFCryptKey,
@@ -89,7 +140,7 @@ func (dkimV2 DeviceKeyInfoMapV2) fillInDeviceInfos(
 			continue
 		}
 
-		clientInfo, serverHalf, err := splitTLFCryptKey(
+		clientInfo, serverHalf, err := splitTLFCryptKeyV2(
 			uid, tlfCryptKey, ePrivKey, ePubIndex, k)
 		if err != nil {
 			return nil, err
@@ -368,18 +419,13 @@ func (rkg TLFReaderKeyGenerationsV2) ToTLFReaderKeyBundleV3(
 	for uid, dkim := range rkb.RKeys {
 		dkimV3 := make(DeviceKeyInfoMapV3)
 		for kid, info := range dkim {
-			var infoCopy TLFCryptKeyInfo
-			err := kbfscodec.Update(codec, &infoCopy, info)
-			if err != nil {
-				return TLFReaderKeyBundleV3{}, err
-			}
-
 			keyLocation, index, ePubKey, err :=
 				GetEphemeralPublicKeyInfoV2(info, wkb, rkb)
 			if err != nil {
 				return TLFReaderKeyBundleV3{}, err
 			}
 
+			var newEPubKeyIndex int
 			switch keyLocation {
 			case WriterEPubKeys:
 				// Map the old index in the writer list to a new index
@@ -395,14 +441,20 @@ func (rkg TLFReaderKeyGenerationsV2) ToTLFReaderKeyBundleV3(
 					newIndex = len(rkbV3.TLFEphemeralPublicKeys) - 1
 					pubKeyIndicesMap[index] = newIndex
 				}
-				infoCopy.EPubKeyIndex = newIndex
+				newEPubKeyIndex = newIndex
 			case ReaderEPubKeys:
 				// Use the real index in the reader list.
-				infoCopy.EPubKeyIndex = index
+				newEPubKeyIndex = index
 			default:
 				return TLFReaderKeyBundleV3{}, fmt.Errorf("Unknown key location %s", keyLocation)
 			}
-			dkimV3[kbfscrypto.MakeCryptPublicKey(kid)] = infoCopy
+			dkimV3[kbfscrypto.MakeCryptPublicKey(kid)] = TLFCryptKeyInfo{
+				ClientHalf:             info.ClientHalf,
+				ServerHalfID:           info.ServerHalfID,
+				EPubKeyIndex:           newEPubKeyIndex,
+				UnknownFieldSetHandler: info.UnknownFieldSetHandler,
+			}
+
 		}
 		rkbV3.Keys[uid] = dkimV3
 	}

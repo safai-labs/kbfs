@@ -52,31 +52,31 @@ func TestRemoveDevicesNotInV2(t *testing.T) {
 
 	udkimV2 := UserDeviceKeyInfoMapV2{
 		uid1: DeviceKeyInfoMapV2{
-			key1a.KID(): TLFCryptKeyInfo{
+			key1a.KID(): TLFCryptKeyInfoV2{
 				ServerHalfID: id1a,
 				EPubKeyIndex: -1,
 			},
-			key1b.KID(): TLFCryptKeyInfo{
+			key1b.KID(): TLFCryptKeyInfoV2{
 				ServerHalfID: id1b,
 				EPubKeyIndex: +2,
 			},
 		},
 		uid2: DeviceKeyInfoMapV2{
-			key2a.KID(): TLFCryptKeyInfo{
+			key2a.KID(): TLFCryptKeyInfoV2{
 				ServerHalfID: id2a,
 				EPubKeyIndex: -2,
 			},
-			key2b.KID(): TLFCryptKeyInfo{
+			key2b.KID(): TLFCryptKeyInfoV2{
 				ServerHalfID: id2b,
 				EPubKeyIndex: 0,
 			},
-			key2c.KID(): TLFCryptKeyInfo{
+			key2c.KID(): TLFCryptKeyInfoV2{
 				ServerHalfID: id2c,
 				EPubKeyIndex: 0,
 			},
 		},
 		uid3: DeviceKeyInfoMapV2{
-			key3a.KID(): TLFCryptKeyInfo{
+			key3a.KID(): TLFCryptKeyInfoV2{
 				ServerHalfID: id3a,
 				EPubKeyIndex: -2,
 			},
@@ -90,17 +90,17 @@ func TestRemoveDevicesNotInV2(t *testing.T) {
 
 	require.Equal(t, UserDeviceKeyInfoMapV2{
 		uid2: DeviceKeyInfoMapV2{
-			key2a.KID(): TLFCryptKeyInfo{
+			key2a.KID(): TLFCryptKeyInfoV2{
 				ServerHalfID: id2a,
 				EPubKeyIndex: -2,
 			},
-			key2c.KID(): TLFCryptKeyInfo{
+			key2c.KID(): TLFCryptKeyInfoV2{
 				ServerHalfID: id2c,
 				EPubKeyIndex: 0,
 			},
 		},
 		uid3: DeviceKeyInfoMapV2{
-			key3a.KID(): TLFCryptKeyInfo{
+			key3a.KID(): TLFCryptKeyInfoV2{
 				ServerHalfID: id3a,
 				EPubKeyIndex: -2,
 			},
@@ -148,13 +148,13 @@ func TestRemoveLastDeviceV2(t *testing.T) {
 
 	udkimV2 := UserDeviceKeyInfoMapV2{
 		uid1: DeviceKeyInfoMapV2{
-			key1.KID(): TLFCryptKeyInfo{
+			key1.KID(): TLFCryptKeyInfoV2{
 				ServerHalfID: id1,
 				EPubKeyIndex: -1,
 			},
 		},
 		uid2: DeviceKeyInfoMapV2{
-			key2.KID(): TLFCryptKeyInfo{
+			key2.KID(): TLFCryptKeyInfoV2{
 				ServerHalfID: id2,
 				EPubKeyIndex: -2,
 			},
@@ -211,21 +211,21 @@ func TestToTLFWriterKeyBundleV3(t *testing.T) {
 	wkbV2 := TLFWriterKeyBundleV2{
 		WKeys: UserDeviceKeyInfoMapV2{
 			uid1: DeviceKeyInfoMapV2{
-				key1a.KID(): TLFCryptKeyInfo{
+				key1a.KID(): TLFCryptKeyInfoV2{
 					EPubKeyIndex: 0,
 				},
-				key1b.KID(): TLFCryptKeyInfo{
+				key1b.KID(): TLFCryptKeyInfoV2{
 					EPubKeyIndex: 1,
 				},
 			},
 			uid2: DeviceKeyInfoMapV2{
-				key2a.KID(): TLFCryptKeyInfo{
+				key2a.KID(): TLFCryptKeyInfoV2{
 					EPubKeyIndex: 1,
 				},
-				key2b.KID(): TLFCryptKeyInfo{
+				key2b.KID(): TLFCryptKeyInfoV2{
 					EPubKeyIndex: 0,
 				},
-				key2c.KID(): TLFCryptKeyInfo{
+				key2c.KID(): TLFCryptKeyInfoV2{
 					EPubKeyIndex: 0,
 				},
 			},
@@ -302,21 +302,21 @@ func TestToTLFReaderKeyBundleV3(t *testing.T) {
 	rkbV2 := TLFReaderKeyBundleV2{
 		RKeys: UserDeviceKeyInfoMapV2{
 			uid1: DeviceKeyInfoMapV2{
-				key1a.KID(): TLFCryptKeyInfo{
+				key1a.KID(): TLFCryptKeyInfoV2{
 					EPubKeyIndex: -1,
 				},
-				key1b.KID(): TLFCryptKeyInfo{
+				key1b.KID(): TLFCryptKeyInfoV2{
 					EPubKeyIndex: +2,
 				},
 			},
 			uid2: DeviceKeyInfoMapV2{
-				key2a.KID(): TLFCryptKeyInfo{
+				key2a.KID(): TLFCryptKeyInfoV2{
 					EPubKeyIndex: -2,
 				},
-				key2b.KID(): TLFCryptKeyInfo{
+				key2b.KID(): TLFCryptKeyInfoV2{
 					EPubKeyIndex: 0,
 				},
-				key2c.KID(): TLFCryptKeyInfo{
+				key2c.KID(): TLFCryptKeyInfoV2{
 					EPubKeyIndex: 0,
 				},
 			},
@@ -408,13 +408,50 @@ func TestToTLFReaderKeyBundleV3(t *testing.T) {
 	}
 }
 
-type deviceKeyInfoMapV2Future map[keybase1.KID]tlfCryptKeyInfoFuture
+type tlfCryptKeyInfoV2Future struct {
+	TLFCryptKeyInfoV2
+	kbfscodec.Extra
+}
+
+func (cki tlfCryptKeyInfoV2Future) toCurrent() TLFCryptKeyInfoV2 {
+	return cki.TLFCryptKeyInfoV2
+}
+
+func (cki tlfCryptKeyInfoV2Future) ToCurrentStruct() kbfscodec.CurrentStruct {
+	return cki.toCurrent()
+}
+
+func makeFakeTLFCryptKeyInfoV2Future(t *testing.T) tlfCryptKeyInfoV2Future {
+	id, err := kbfscrypto.MakeTLFCryptKeyServerHalfID(
+		keybase1.MakeTestUID(1),
+		kbfscrypto.MakeFakeCryptPublicKeyOrBust("fake"),
+		kbfscrypto.MakeTLFCryptKeyServerHalf([32]byte{0x3}))
+	require.NoError(t, err)
+	cki := TLFCryptKeyInfoV2{
+		kbfscrypto.MakeEncryptedTLFCryptKeyClientHalfForTest(
+			kbfscrypto.EncryptionSecretbox,
+			[]byte("fake encrypted data"),
+			[]byte("fake nonce")),
+		id, -5,
+		codec.UnknownFieldSetHandler{},
+	}
+	return tlfCryptKeyInfoV2Future{
+		cki,
+		kbfscodec.MakeExtraOrBust("TLFCryptKeyInfoV2", t),
+	}
+}
+
+func TestTLFCryptKeyInfoV2UnknownFields(t *testing.T) {
+	testStructUnknownFields(t, makeFakeTLFCryptKeyInfoV2Future(t))
+}
+
+type deviceKeyInfoMapV2Future map[keybase1.KID]tlfCryptKeyInfoV2Future
 
 func (dkimf deviceKeyInfoMapV2Future) toCurrent() DeviceKeyInfoMapV2 {
 	dkim := make(DeviceKeyInfoMapV2, len(dkimf))
 	for k, kif := range dkimf {
 		ki := kif.toCurrent()
-		dkim[k] = TLFCryptKeyInfo(ki)
+		dkim[k] = TLFCryptKeyInfoV2(ki)
 	}
 	return dkim
 }
@@ -450,7 +487,7 @@ func (wkbf tlfWriterKeyBundleV2Future) ToCurrentStruct() kbfscodec.CurrentStruct
 func makeFakeDeviceKeyInfoMapV2Future(t *testing.T) userDeviceKeyInfoMapV2Future {
 	return userDeviceKeyInfoMapV2Future{
 		"fake uid": deviceKeyInfoMapV2Future{
-			"fake kid": makeFakeTLFCryptKeyInfoFuture(t),
+			"fake kid": makeFakeTLFCryptKeyInfoV2Future(t),
 		},
 	}
 }

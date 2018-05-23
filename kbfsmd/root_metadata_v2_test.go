@@ -474,13 +474,13 @@ func TestRevokeRemovedDevicesV2(t *testing.T) {
 		TLFWriterKeyBundleV2{
 			WKeys: UserDeviceKeyInfoMapV2{
 				uid1: DeviceKeyInfoMapV2{
-					key1.KID(): TLFCryptKeyInfo{
+					key1.KID(): TLFCryptKeyInfoV2{
 						ServerHalfID: id1a,
 						EPubKeyIndex: 0,
 					},
 				},
 				uid2: DeviceKeyInfoMapV2{
-					key2.KID(): TLFCryptKeyInfo{
+					key2.KID(): TLFCryptKeyInfoV2{
 						ServerHalfID: id2a,
 						EPubKeyIndex: 1,
 					},
@@ -490,13 +490,13 @@ func TestRevokeRemovedDevicesV2(t *testing.T) {
 		TLFWriterKeyBundleV2{
 			WKeys: UserDeviceKeyInfoMapV2{
 				uid1: DeviceKeyInfoMapV2{
-					key1.KID(): TLFCryptKeyInfo{
+					key1.KID(): TLFCryptKeyInfoV2{
 						ServerHalfID: id1b,
 						EPubKeyIndex: 0,
 					},
 				},
 				uid2: DeviceKeyInfoMapV2{
-					key2.KID(): TLFCryptKeyInfo{
+					key2.KID(): TLFCryptKeyInfoV2{
 						ServerHalfID: id2b,
 						EPubKeyIndex: 0,
 					},
@@ -509,7 +509,7 @@ func TestRevokeRemovedDevicesV2(t *testing.T) {
 		TLFReaderKeyBundleV2{
 			RKeys: UserDeviceKeyInfoMapV2{
 				uid3: DeviceKeyInfoMapV2{
-					key3.KID(): TLFCryptKeyInfo{
+					key3.KID(): TLFCryptKeyInfoV2{
 						ServerHalfID: id3a,
 						EPubKeyIndex: 0,
 					},
@@ -519,7 +519,7 @@ func TestRevokeRemovedDevicesV2(t *testing.T) {
 		TLFReaderKeyBundleV2{
 			RKeys: UserDeviceKeyInfoMapV2{
 				uid3: DeviceKeyInfoMapV2{
-					key3.KID(): TLFCryptKeyInfo{
+					key3.KID(): TLFCryptKeyInfoV2{
 						ServerHalfID: id3b,
 						EPubKeyIndex: 0,
 					},
@@ -551,7 +551,7 @@ func TestRevokeRemovedDevicesV2(t *testing.T) {
 		TLFWriterKeyBundleV2{
 			WKeys: UserDeviceKeyInfoMapV2{
 				uid1: DeviceKeyInfoMapV2{
-					key1.KID(): TLFCryptKeyInfo{
+					key1.KID(): TLFCryptKeyInfoV2{
 						ServerHalfID: id1a,
 						EPubKeyIndex: 0,
 					},
@@ -561,7 +561,7 @@ func TestRevokeRemovedDevicesV2(t *testing.T) {
 		TLFWriterKeyBundleV2{
 			WKeys: UserDeviceKeyInfoMapV2{
 				uid1: DeviceKeyInfoMapV2{
-					key1.KID(): TLFCryptKeyInfo{
+					key1.KID(): TLFCryptKeyInfoV2{
 						ServerHalfID: id1b,
 						EPubKeyIndex: 0,
 					},
@@ -575,7 +575,7 @@ func TestRevokeRemovedDevicesV2(t *testing.T) {
 		TLFReaderKeyBundleV2{
 			RKeys: UserDeviceKeyInfoMapV2{
 				uid3: DeviceKeyInfoMapV2{
-					key3.KID(): TLFCryptKeyInfo{
+					key3.KID(): TLFCryptKeyInfoV2{
 						ServerHalfID: id3a,
 						EPubKeyIndex: 0,
 					},
@@ -585,7 +585,7 @@ func TestRevokeRemovedDevicesV2(t *testing.T) {
 		TLFReaderKeyBundleV2{
 			RKeys: UserDeviceKeyInfoMapV2{
 				uid3: DeviceKeyInfoMapV2{
-					key3.KID(): TLFCryptKeyInfo{
+					key3.KID(): TLFCryptKeyInfoV2{
 						ServerHalfID: id3b,
 						EPubKeyIndex: 0,
 					},
@@ -631,13 +631,13 @@ func TestRevokeLastDeviceV2(t *testing.T) {
 		TLFWriterKeyBundleV2{
 			WKeys: UserDeviceKeyInfoMapV2{
 				uid1: DeviceKeyInfoMapV2{
-					key1.KID(): TLFCryptKeyInfo{
+					key1.KID(): TLFCryptKeyInfoV2{
 						ServerHalfID: id1,
 						EPubKeyIndex: 0,
 					},
 				},
 				uid2: DeviceKeyInfoMapV2{
-					key2.KID(): TLFCryptKeyInfo{
+					key2.KID(): TLFCryptKeyInfoV2{
 						ServerHalfID: id2,
 						EPubKeyIndex: 1,
 					},
@@ -768,10 +768,10 @@ type expectedRekeyInfoV2 struct {
 	ePubKey                        kbfscrypto.TLFEphemeralPublicKey
 }
 
-func checkCryptKeyInfo(t *testing.T, privKey kbfscrypto.CryptPrivateKey,
+func checkCryptKeyInfoV2(t *testing.T, privKey kbfscrypto.CryptPrivateKey,
 	serverHalf kbfscrypto.TLFCryptKeyServerHalf, expectedEPubKeyIndex int,
 	expectedEPubKey kbfscrypto.TLFEphemeralPublicKey,
-	expectedTLFCryptKey kbfscrypto.TLFCryptKey, info TLFCryptKeyInfo,
+	expectedTLFCryptKey kbfscrypto.TLFCryptKey, info TLFCryptKeyInfoV2,
 	ePubKey kbfscrypto.TLFEphemeralPublicKey) {
 	require.Equal(t, expectedEPubKeyIndex, info.EPubKeyIndex)
 	require.Equal(t, expectedEPubKey, ePubKey)
@@ -804,7 +804,7 @@ func checkGetTLFCryptKeyV2(t *testing.T, keyGen KeyGen,
 
 			ePubKey := wkb.TLFEphemeralPublicKeys[info.EPubKeyIndex]
 
-			checkCryptKeyInfo(t, privKey, serverHalf,
+			checkCryptKeyInfoV2(t, privKey, serverHalf,
 				expected.ePubKeyIndex, expected.ePubKey,
 				expectedTLFCryptKey, info, ePubKey)
 		}
@@ -824,7 +824,7 @@ func checkGetTLFCryptKeyV2(t *testing.T, keyGen KeyGen,
 				info, *wkb, *rkb)
 			require.NoError(t, err)
 
-			checkCryptKeyInfo(t, privKey, serverHalf,
+			checkCryptKeyInfoV2(t, privKey, serverHalf,
 				expected.ePubKeyIndex, expected.ePubKey,
 				expectedTLFCryptKey, info, ePubKey)
 		}

@@ -422,6 +422,22 @@ type expectedRekeyInfoV3 struct {
 	ePubKey                                kbfscrypto.TLFEphemeralPublicKey
 }
 
+func checkCryptKeyInfoV3(t *testing.T, privKey kbfscrypto.CryptPrivateKey,
+	serverHalf kbfscrypto.TLFCryptKeyServerHalf, expectedEPubKeyIndex int,
+	expectedEPubKey kbfscrypto.TLFEphemeralPublicKey,
+	expectedTLFCryptKey kbfscrypto.TLFCryptKey, info TLFCryptKeyInfo,
+	ePubKey kbfscrypto.TLFEphemeralPublicKey) {
+	require.Equal(t, expectedEPubKeyIndex, info.EPubKeyIndex)
+	require.Equal(t, expectedEPubKey, ePubKey)
+
+	clientHalf, err := kbfscrypto.DecryptTLFCryptKeyClientHalf(
+		privKey, ePubKey, info.ClientHalf)
+	require.NoError(t, err)
+
+	tlfCryptKey := kbfscrypto.UnmaskTLFCryptKey(serverHalf, clientHalf)
+	require.Equal(t, expectedTLFCryptKey, tlfCryptKey)
+}
+
 // checkGetTLFCryptKeyV3 checks that wkb and rkb contain the info
 // necessary to get the TLF crypt key for each user in expected, which
 // must all match expectedTLFCryptKey.
@@ -440,7 +456,7 @@ func checkGetTLFCryptKeyV3(t *testing.T, expected expectedRekeyInfoV3,
 
 			ePubKey := wkb.TLFEphemeralPublicKeys[info.EPubKeyIndex]
 
-			checkCryptKeyInfo(t, privKey, serverHalf,
+			checkCryptKeyInfoV3(t, privKey, serverHalf,
 				expected.writerEPubKeyIndex, expected.ePubKey,
 				expectedTLFCryptKey, info, ePubKey)
 		}
@@ -458,7 +474,7 @@ func checkGetTLFCryptKeyV3(t *testing.T, expected expectedRekeyInfoV3,
 
 			ePubKey := rkb.TLFEphemeralPublicKeys[info.EPubKeyIndex]
 
-			checkCryptKeyInfo(t, privKey, serverHalf,
+			checkCryptKeyInfoV3(t, privKey, serverHalf,
 				expected.readerEPubKeyIndex, expected.ePubKey,
 				expectedTLFCryptKey, info, ePubKey)
 		}
