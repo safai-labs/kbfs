@@ -138,29 +138,29 @@ func TestIsValidRekeyRequestBasicV3(t *testing.T) {
 
 	codec := kbfscodec.NewMsgpack()
 
-	brmd, err := MakeInitialRootMetadataV3(tlfID, bh)
+	rmd, err := MakeInitialRootMetadataV3(tlfID, bh)
 	require.NoError(t, err)
-	extra := FakeInitialRekey(brmd, bh, kbfscrypto.TLFPublicKey{})
+	extra := FakeInitialRekey(rmd, bh, kbfscrypto.TLFPublicKey{})
 
-	newBrmd, err := brmd.DeepCopy(codec)
+	newRmd, err := rmd.DeepCopy(codec)
 	require.NoError(t, err)
 	newExtra, err := extra.DeepCopy(codec)
 	require.NoError(t, err)
 
-	ok, err := newBrmd.IsValidRekeyRequest(
-		codec, brmd, newBrmd.LastModifyingWriter(), extra, newExtra)
+	ok, err := newRmd.IsValidRekeyRequest(
+		codec, rmd, newRmd.LastModifyingWriter(), extra, newExtra)
 	require.NoError(t, err)
 	// Should fail because the copy bit is unset.
 	require.False(t, ok)
 
 	// Set the copy bit; note the writer metadata is the same.
-	newBrmd.SetWriterMetadataCopiedBit()
+	newRmd.SetWriterMetadataCopiedBit()
 
 	// There's no internal signature to compare, so this should
 	// then work.
 
-	ok, err = newBrmd.IsValidRekeyRequest(
-		codec, brmd, newBrmd.LastModifyingWriter(), extra, newExtra)
+	ok, err = newRmd.IsValidRekeyRequest(
+		codec, rmd, newRmd.LastModifyingWriter(), extra, newExtra)
 	require.NoError(t, err)
 	require.True(t, ok)
 }
@@ -226,12 +226,12 @@ func TestRevokeRemovedDevicesV3(t *testing.T) {
 		[]keybase1.UserOrTeamID{uid3.AsUserOrTeam()}, nil, nil, nil)
 	require.NoError(t, err)
 
-	brmd, err := MakeInitialRootMetadataV3(tlfID, bh)
+	rmd, err := MakeInitialRootMetadataV3(tlfID, bh)
 	require.NoError(t, err)
 
-	extra := FakeInitialRekey(brmd, bh, kbfscrypto.TLFPublicKey{})
+	extra := FakeInitialRekey(rmd, bh, kbfscrypto.TLFPublicKey{})
 
-	wkb, rkb, err := brmd.getTLFKeyBundles(extra)
+	wkb, rkb, err := rmd.getTLFKeyBundles(extra)
 	require.NoError(t, err)
 
 	*wkb = TLFWriterKeyBundleV3{
@@ -269,7 +269,7 @@ func TestRevokeRemovedDevicesV3(t *testing.T) {
 		uid3: {key3: true},
 	}
 
-	removalInfo, err := brmd.RevokeRemovedDevices(
+	removalInfo, err := rmd.RevokeRemovedDevices(
 		updatedWriterKeys, updatedReaderKeys, extra)
 	require.NoError(t, err)
 	require.Equal(t, ServerHalfRemovalInfo{
@@ -334,12 +334,12 @@ func TestRevokeLastDeviceV3(t *testing.T) {
 		nil, nil, nil)
 	require.NoError(t, err)
 
-	brmd, err := MakeInitialRootMetadataV3(tlfID, bh)
+	rmd, err := MakeInitialRootMetadataV3(tlfID, bh)
 	require.NoError(t, err)
 
-	extra := FakeInitialRekey(brmd, bh, kbfscrypto.TLFPublicKey{})
+	extra := FakeInitialRekey(rmd, bh, kbfscrypto.TLFPublicKey{})
 
-	wkb, rkb, err := brmd.getTLFKeyBundles(extra)
+	wkb, rkb, err := rmd.getTLFKeyBundles(extra)
 	require.NoError(t, err)
 
 	*wkb = TLFWriterKeyBundleV3{
@@ -373,7 +373,7 @@ func TestRevokeLastDeviceV3(t *testing.T) {
 		uid3: {},
 	}
 
-	removalInfo, err := brmd.RevokeRemovedDevices(
+	removalInfo, err := rmd.RevokeRemovedDevices(
 		updatedWriterKeys, updatedReaderKeys, extra)
 	require.NoError(t, err)
 	require.Equal(t, ServerHalfRemovalInfo{

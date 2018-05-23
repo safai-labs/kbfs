@@ -60,12 +60,12 @@ func TestRootMetadataRevisionV2(t *testing.T) {
 		[]keybase1.UserOrTeamID{uid.AsUserOrTeam()}, nil, nil, nil, nil)
 	require.NoError(t, err)
 
-	brmd, err := MakeInitialRootMetadataV2(tlfID, bh)
+	rmd, err := MakeInitialRootMetadataV2(tlfID, bh)
 	require.NoError(t, err)
 
 	// This should msgpack-encode as a uint8 (0xcc), and not an
 	// int16 (0xd1).
-	brmd.Revision = 128
+	rmd.Revision = 128
 
 	codec := kbfscodec.NewMsgpack()
 
@@ -94,7 +94,7 @@ func TestRootMetadataRevisionV2(t *testing.T) {
 		0xc0,
 	}
 
-	buf, err := codec.Encode(brmd)
+	buf, err := codec.Encode(rmd)
 	require.NoError(t, err)
 	require.Equal(t, expectedBuf, buf)
 }
@@ -386,7 +386,7 @@ func TestIsValidRekeyRequestBasicV2(t *testing.T) {
 		[]keybase1.UserOrTeamID{uid.AsUserOrTeam()}, nil, nil, nil, nil)
 	require.NoError(t, err)
 
-	brmd, err := MakeInitialRootMetadataV2(tlfID, bh)
+	rmd, err := MakeInitialRootMetadataV2(tlfID, bh)
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -395,38 +395,38 @@ func TestIsValidRekeyRequestBasicV2(t *testing.T) {
 		Key: kbfscrypto.MakeFakeSigningKeyOrBust("key1"),
 	}
 
-	err = brmd.SignWriterMetadataInternally(ctx, codec, signer)
+	err = rmd.SignWriterMetadataInternally(ctx, codec, signer)
 	require.NoError(t, err)
 
-	newBrmd, err := MakeInitialRootMetadataV2(tlfID, bh)
+	newRmd, err := MakeInitialRootMetadataV2(tlfID, bh)
 	require.NoError(t, err)
-	ok, err := newBrmd.IsValidRekeyRequest(
-		codec, brmd, newBrmd.LastModifyingWriter(), nil, nil)
+	ok, err := newRmd.IsValidRekeyRequest(
+		codec, rmd, newRmd.LastModifyingWriter(), nil, nil)
 	require.NoError(t, err)
 	// Should fail because the copy bit is unset.
 	require.False(t, ok)
 
 	// Set the copy bit; note the writer metadata is the same.
-	newBrmd.SetWriterMetadataCopiedBit()
+	newRmd.SetWriterMetadataCopiedBit()
 
 	signer2 := kbfscrypto.SigningKeySigner{
 		Key: kbfscrypto.MakeFakeSigningKeyOrBust("key2"),
 	}
 
-	err = newBrmd.SignWriterMetadataInternally(ctx, codec, signer2)
+	err = newRmd.SignWriterMetadataInternally(ctx, codec, signer2)
 	require.NoError(t, err)
 
-	ok, err = newBrmd.IsValidRekeyRequest(
-		codec, brmd, newBrmd.LastModifyingWriter(), nil, nil)
+	ok, err = newRmd.IsValidRekeyRequest(
+		codec, rmd, newRmd.LastModifyingWriter(), nil, nil)
 	require.NoError(t, err)
 	// Should fail because of mismatched writer metadata siginfo.
 	require.False(t, ok)
 
 	// Re-sign to get the same signature.
-	err = newBrmd.SignWriterMetadataInternally(ctx, codec, signer)
+	err = newRmd.SignWriterMetadataInternally(ctx, codec, signer)
 	require.NoError(t, err)
-	ok, err = newBrmd.IsValidRekeyRequest(
-		codec, brmd, newBrmd.LastModifyingWriter(), nil, nil)
+	ok, err = newRmd.IsValidRekeyRequest(
+		codec, rmd, newRmd.LastModifyingWriter(), nil, nil)
 	require.NoError(t, err)
 	require.True(t, ok)
 }
@@ -467,10 +467,10 @@ func TestRevokeRemovedDevicesV2(t *testing.T) {
 		[]keybase1.UserOrTeamID{uid3.AsUserOrTeam()}, nil, nil, nil)
 	require.NoError(t, err)
 
-	brmd, err := MakeInitialRootMetadataV2(tlfID, bh)
+	rmd, err := MakeInitialRootMetadataV2(tlfID, bh)
 	require.NoError(t, err)
 
-	brmd.WKeys = TLFWriterKeyGenerationsV2{
+	rmd.WKeys = TLFWriterKeyGenerationsV2{
 		TLFWriterKeyBundleV2{
 			WKeys: UserDeviceKeyInfoMapV2{
 				uid1: DeviceKeyInfoMapV2{
@@ -505,7 +505,7 @@ func TestRevokeRemovedDevicesV2(t *testing.T) {
 		},
 	}
 
-	brmd.RKeys = TLFReaderKeyGenerationsV2{
+	rmd.RKeys = TLFReaderKeyGenerationsV2{
 		TLFReaderKeyBundleV2{
 			RKeys: UserDeviceKeyInfoMapV2{
 				uid3: DeviceKeyInfoMapV2{
@@ -535,7 +535,7 @@ func TestRevokeRemovedDevicesV2(t *testing.T) {
 		uid3: {key3: true},
 	}
 
-	removalInfo, err := brmd.RevokeRemovedDevices(
+	removalInfo, err := rmd.RevokeRemovedDevices(
 		updatedWriterKeys, updatedReaderKeys, nil)
 	require.NoError(t, err)
 	require.Equal(t, ServerHalfRemovalInfo{
@@ -569,7 +569,7 @@ func TestRevokeRemovedDevicesV2(t *testing.T) {
 			},
 		},
 	}
-	require.Equal(t, expectedWKeys, brmd.WKeys)
+	require.Equal(t, expectedWKeys, rmd.WKeys)
 
 	expectedRKeys := TLFReaderKeyGenerationsV2{
 		TLFReaderKeyBundleV2{
@@ -593,7 +593,7 @@ func TestRevokeRemovedDevicesV2(t *testing.T) {
 			},
 		},
 	}
-	require.Equal(t, expectedRKeys, brmd.RKeys)
+	require.Equal(t, expectedRKeys, rmd.RKeys)
 }
 
 // TestRevokeLastDeviceV2 checks behavior of RevokeRemovedDevices with
@@ -624,10 +624,10 @@ func TestRevokeLastDeviceV2(t *testing.T) {
 		nil, nil, nil)
 	require.NoError(t, err)
 
-	brmd, err := MakeInitialRootMetadataV2(tlfID, bh)
+	rmd, err := MakeInitialRootMetadataV2(tlfID, bh)
 	require.NoError(t, err)
 
-	brmd.WKeys = TLFWriterKeyGenerationsV2{
+	rmd.WKeys = TLFWriterKeyGenerationsV2{
 		TLFWriterKeyBundleV2{
 			WKeys: UserDeviceKeyInfoMapV2{
 				uid1: DeviceKeyInfoMapV2{
@@ -646,7 +646,7 @@ func TestRevokeLastDeviceV2(t *testing.T) {
 		},
 	}
 
-	brmd.RKeys = TLFReaderKeyGenerationsV2{
+	rmd.RKeys = TLFReaderKeyGenerationsV2{
 		TLFReaderKeyBundleV2{
 			RKeys: UserDeviceKeyInfoMapV2{
 				uid3: DeviceKeyInfoMapV2{},
@@ -662,7 +662,7 @@ func TestRevokeLastDeviceV2(t *testing.T) {
 		uid3: {},
 	}
 
-	removalInfo, err := brmd.RevokeRemovedDevices(
+	removalInfo, err := rmd.RevokeRemovedDevices(
 		updatedWriterKeys, updatedReaderKeys, nil)
 	require.NoError(t, err)
 	require.Equal(t, ServerHalfRemovalInfo{
@@ -690,7 +690,7 @@ func TestRevokeLastDeviceV2(t *testing.T) {
 			},
 		},
 	}
-	require.Equal(t, expectedWKeys, brmd.WKeys)
+	require.Equal(t, expectedWKeys, rmd.WKeys)
 
 	expectedRKeys := TLFReaderKeyGenerationsV2{
 		TLFReaderKeyBundleV2{
@@ -699,7 +699,7 @@ func TestRevokeLastDeviceV2(t *testing.T) {
 			},
 		},
 	}
-	require.Equal(t, expectedRKeys, brmd.RKeys)
+	require.Equal(t, expectedRKeys, rmd.RKeys)
 }
 
 type userDeviceSet UserDevicePublicKeys
