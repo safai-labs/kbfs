@@ -67,8 +67,6 @@ func TestRootMetadataRevisionV2(t *testing.T) {
 	// int16 (0xd1).
 	rmd.Revision = 128
 
-	codec := kbfscodec.NewMsgpack()
-
 	expectedBuf := []byte{
 		0x8d, 0xa3, 0x42, 0x49, 0x44, 0xc4,
 		0x10, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
@@ -94,6 +92,7 @@ func TestRootMetadataRevisionV2(t *testing.T) {
 		0xc0,
 	}
 
+	codec := kbfscodec.NewMsgpack()
 	buf, err := codec.Encode(rmd)
 	require.NoError(t, err)
 	require.Equal(t, expectedBuf, buf)
