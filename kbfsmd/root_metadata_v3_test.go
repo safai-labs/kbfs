@@ -237,13 +237,13 @@ func TestRevokeRemovedDevicesV3(t *testing.T) {
 	*wkb = TLFWriterKeyBundleV3{
 		Keys: UserDeviceKeyInfoMapV3{
 			uid1: DeviceKeyInfoMapV3{
-				key1: TLFCryptKeyInfo{
+				key1: TLFCryptKeyInfoV3{
 					ServerHalfID: id1a,
 					EPubKeyIndex: 0,
 				},
 			},
 			uid2: DeviceKeyInfoMapV3{
-				key2: TLFCryptKeyInfo{
+				key2: TLFCryptKeyInfoV3{
 					ServerHalfID: id2a,
 					EPubKeyIndex: 0,
 				},
@@ -254,7 +254,7 @@ func TestRevokeRemovedDevicesV3(t *testing.T) {
 	*rkb = TLFReaderKeyBundleV3{
 		Keys: UserDeviceKeyInfoMapV3{
 			uid3: DeviceKeyInfoMapV3{
-				key3: TLFCryptKeyInfo{
+				key3: TLFCryptKeyInfoV3{
 					ServerHalfID: id3a,
 					EPubKeyIndex: 0,
 				},
@@ -284,7 +284,7 @@ func TestRevokeRemovedDevicesV3(t *testing.T) {
 	expectedWKB := TLFWriterKeyBundleV3{
 		Keys: UserDeviceKeyInfoMapV3{
 			uid1: DeviceKeyInfoMapV3{
-				key1: TLFCryptKeyInfo{
+				key1: TLFCryptKeyInfoV3{
 					ServerHalfID: id1a,
 					EPubKeyIndex: 0,
 				},
@@ -296,7 +296,7 @@ func TestRevokeRemovedDevicesV3(t *testing.T) {
 	expectedRKB := TLFReaderKeyBundleV3{
 		Keys: UserDeviceKeyInfoMapV3{
 			uid3: DeviceKeyInfoMapV3{
-				key3: TLFCryptKeyInfo{
+				key3: TLFCryptKeyInfoV3{
 					ServerHalfID: id3a,
 					EPubKeyIndex: 0,
 				},
@@ -345,13 +345,13 @@ func TestRevokeLastDeviceV3(t *testing.T) {
 	*wkb = TLFWriterKeyBundleV3{
 		Keys: UserDeviceKeyInfoMapV3{
 			uid1: DeviceKeyInfoMapV3{
-				key1: TLFCryptKeyInfo{
+				key1: TLFCryptKeyInfoV3{
 					ServerHalfID: id1,
 					EPubKeyIndex: 0,
 				},
 			},
 			uid2: DeviceKeyInfoMapV3{
-				key2: TLFCryptKeyInfo{
+				key2: TLFCryptKeyInfoV3{
 					ServerHalfID: id2,
 					EPubKeyIndex: 1,
 				},
@@ -425,7 +425,7 @@ type expectedRekeyInfoV3 struct {
 func checkCryptKeyInfoV3(t *testing.T, privKey kbfscrypto.CryptPrivateKey,
 	serverHalf kbfscrypto.TLFCryptKeyServerHalf, expectedEPubKeyIndex int,
 	expectedEPubKey kbfscrypto.TLFEphemeralPublicKey,
-	expectedTLFCryptKey kbfscrypto.TLFCryptKey, info TLFCryptKeyInfo,
+	expectedTLFCryptKey kbfscrypto.TLFCryptKey, info TLFCryptKeyInfoV3,
 	ePubKey kbfscrypto.TLFEphemeralPublicKey) {
 	require.Equal(t, expectedEPubKeyIndex, info.EPubKeyIndex)
 	require.Equal(t, expectedEPubKey, ePubKey)

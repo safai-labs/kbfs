@@ -448,7 +448,7 @@ func (rkg TLFReaderKeyGenerationsV2) ToTLFReaderKeyBundleV3(
 			default:
 				return TLFReaderKeyBundleV3{}, fmt.Errorf("Unknown key location %s", keyLocation)
 			}
-			dkimV3[kbfscrypto.MakeCryptPublicKey(kid)] = TLFCryptKeyInfo{
+			dkimV3[kbfscrypto.MakeCryptPublicKey(kid)] = TLFCryptKeyInfoV3{
 				ClientHalf:             info.ClientHalf,
 				ServerHalfID:           info.ServerHalfID,
 				EPubKeyIndex:           newEPubKeyIndex,

@@ -14,6 +14,43 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type tlfCryptKeyInfoV3Future struct {
+	TLFCryptKeyInfoV3
+	kbfscodec.Extra
+}
+
+func (cki tlfCryptKeyInfoV3Future) toCurrent() TLFCryptKeyInfoV3 {
+	return cki.TLFCryptKeyInfoV3
+}
+
+func (cki tlfCryptKeyInfoV3Future) ToCurrentStruct() kbfscodec.CurrentStruct {
+	return cki.toCurrent()
+}
+
+func makeFakeTLFCryptKeyInfoV3Future(t *testing.T) tlfCryptKeyInfoV3Future {
+	id, err := kbfscrypto.MakeTLFCryptKeyServerHalfID(
+		keybase1.MakeTestUID(1),
+		kbfscrypto.MakeFakeCryptPublicKeyOrBust("fake"),
+		kbfscrypto.MakeTLFCryptKeyServerHalf([32]byte{0x3}))
+	require.NoError(t, err)
+	cki := TLFCryptKeyInfoV3{
+		kbfscrypto.MakeEncryptedTLFCryptKeyClientHalfForTest(
+			kbfscrypto.EncryptionSecretbox,
+			[]byte("fake encrypted data"),
+			[]byte("fake nonce")),
+		id, 5,
+		codec.UnknownFieldSetHandler{},
+	}
+	return tlfCryptKeyInfoV3Future{
+		cki,
+		kbfscodec.MakeExtraOrBust("TLFCryptKeyInfo", t),
+	}
+}
+
+func TestTLFCryptKeyInfoUnknownFields(t *testing.T) {
+	testStructUnknownFields(t, makeFakeTLFCryptKeyInfoV3Future(t))
+}
+
 // Make sure creating an WKB ID for a WKB with no keys fails.
 func TestWKBID(t *testing.T) {
 	codec := kbfscodec.NewMsgpack()
@@ -84,31 +121,31 @@ func TestRemoveDevicesNotInV3(t *testing.T) {
 
 	udkimV3 := UserDeviceKeyInfoMapV3{
 		uid1: DeviceKeyInfoMapV3{
-			key1a: TLFCryptKeyInfo{
+			key1a: TLFCryptKeyInfoV3{
 				ServerHalfID: id1a,
 				EPubKeyIndex: 1,
 			},
-			key1b: TLFCryptKeyInfo{
+			key1b: TLFCryptKeyInfoV3{
 				ServerHalfID: id1b,
 				EPubKeyIndex: 2,
 			},
 		},
 		uid2: DeviceKeyInfoMapV3{
-			key2a: TLFCryptKeyInfo{
+			key2a: TLFCryptKeyInfoV3{
 				ServerHalfID: id2a,
 				EPubKeyIndex: 2,
 			},
-			key2b: TLFCryptKeyInfo{
+			key2b: TLFCryptKeyInfoV3{
 				ServerHalfID: id2b,
 				EPubKeyIndex: 0,
 			},
-			key2c: TLFCryptKeyInfo{
+			key2c: TLFCryptKeyInfoV3{
 				ServerHalfID: id2c,
 				EPubKeyIndex: 0,
 			},
 		},
 		uid3: DeviceKeyInfoMapV3{
-			key3a: TLFCryptKeyInfo{
+			key3a: TLFCryptKeyInfoV3{
 				ServerHalfID: id3a,
 				EPubKeyIndex: 2,
 			},
@@ -122,17 +159,17 @@ func TestRemoveDevicesNotInV3(t *testing.T) {
 
 	require.Equal(t, UserDeviceKeyInfoMapV3{
 		uid2: DeviceKeyInfoMapV3{
-			key2a: TLFCryptKeyInfo{
+			key2a: TLFCryptKeyInfoV3{
 				ServerHalfID: id2a,
 				EPubKeyIndex: 2,
 			},
-			key2c: TLFCryptKeyInfo{
+			key2c: TLFCryptKeyInfoV3{
 				ServerHalfID: id2c,
 				EPubKeyIndex: 0,
 			},
 		},
 		uid3: DeviceKeyInfoMapV3{
-			key3a: TLFCryptKeyInfo{
+			key3a: TLFCryptKeyInfoV3{
 				ServerHalfID: id3a,
 				EPubKeyIndex: 2,
 			},
@@ -180,13 +217,13 @@ func TestRemoveLastDeviceV3(t *testing.T) {
 
 	udkimV3 := UserDeviceKeyInfoMapV3{
 		uid1: DeviceKeyInfoMapV3{
-			key1: TLFCryptKeyInfo{
+			key1: TLFCryptKeyInfoV3{
 				ServerHalfID: id1,
 				EPubKeyIndex: 1,
 			},
 		},
 		uid2: DeviceKeyInfoMapV3{
-			key2: TLFCryptKeyInfo{
+			key2: TLFCryptKeyInfoV3{
 				ServerHalfID: id2,
 				EPubKeyIndex: 2,
 			},
@@ -225,13 +262,13 @@ func TestRemoveLastDeviceV3(t *testing.T) {
 	}, removalInfo)
 }
 
-type deviceKeyInfoMapV3Future map[kbfscrypto.CryptPublicKey]tlfCryptKeyInfoFuture
+type deviceKeyInfoMapV3Future map[kbfscrypto.CryptPublicKey]tlfCryptKeyInfoV3Future
 
 func (dkimf deviceKeyInfoMapV3Future) toCurrent() DeviceKeyInfoMapV3 {
 	dkim := make(DeviceKeyInfoMapV3, len(dkimf))
 	for k, kif := range dkimf {
 		ki := kif.toCurrent()
-		dkim[k] = TLFCryptKeyInfo(ki)
+		dkim[k] = TLFCryptKeyInfoV3(ki)
 	}
 	return dkim
 }
@@ -267,7 +304,7 @@ func (wkbf tlfWriterKeyBundleV3Future) ToCurrentStruct() kbfscodec.CurrentStruct
 func makeFakeDeviceKeyInfoMapV3Future(t *testing.T) userDeviceKeyInfoMapV3Future {
 	return userDeviceKeyInfoMapV3Future{
 		"fake uid": deviceKeyInfoMapV3Future{
-			kbfscrypto.MakeFakeCryptPublicKeyOrBust("fake key"): makeFakeTLFCryptKeyInfoFuture(t),
+			kbfscrypto.MakeFakeCryptPublicKeyOrBust("fake key"): makeFakeTLFCryptKeyInfoV3Future(t),
 		},
 	}
 }

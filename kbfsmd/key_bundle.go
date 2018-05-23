@@ -8,19 +8,8 @@ import (
 	"fmt"
 
 	"github.com/keybase/client/go/protocol/keybase1"
-	"github.com/keybase/go-codec/codec"
 	"github.com/keybase/kbfs/kbfscrypto"
 )
-
-// TLFCryptKeyInfo is a per-device key half entry in the
-// TLF{Writer,Reader}KeyBundleV{2,3}.
-type TLFCryptKeyInfo struct {
-	ClientHalf   kbfscrypto.EncryptedTLFCryptKeyClientHalf
-	ServerHalfID kbfscrypto.TLFCryptKeyServerHalfID
-	EPubKeyIndex int `codec:"i,omitempty"`
-
-	codec.UnknownFieldSetHandler
-}
 
 // DevicePublicKeys is a set of a user's devices (identified by the
 // corresponding device CryptPublicKey).
@@ -100,47 +89,6 @@ func (serverHalves UserDeviceKeyServerHalves) MergeUsers(
 		merged[uid] = deviceServerHalves
 	}
 	return merged, nil
-}
-
-// splitTLFCryptKey splits the given TLFCryptKey into two parts -- the
-// client-side part (which is encrypted with the given keys), and the
-// server-side part, which will be uploaded to the server.
-func splitTLFCryptKey(uid keybase1.UID,
-	tlfCryptKey kbfscrypto.TLFCryptKey,
-	ePrivKey kbfscrypto.TLFEphemeralPrivateKey, ePubIndex int,
-	pubKey kbfscrypto.CryptPublicKey) (
-	TLFCryptKeyInfo, kbfscrypto.TLFCryptKeyServerHalf, error) {
-	//    * create a new random server half
-	//    * mask it with the key to get the client half
-	//    * encrypt the client half
-	var serverHalf kbfscrypto.TLFCryptKeyServerHalf
-	serverHalf, err := kbfscrypto.MakeRandomTLFCryptKeyServerHalf()
-	if err != nil {
-		return TLFCryptKeyInfo{}, kbfscrypto.TLFCryptKeyServerHalf{}, err
-	}
-
-	clientHalf := kbfscrypto.MaskTLFCryptKey(serverHalf, tlfCryptKey)
-
-	var encryptedClientHalf kbfscrypto.EncryptedTLFCryptKeyClientHalf
-	encryptedClientHalf, err =
-		kbfscrypto.EncryptTLFCryptKeyClientHalf(ePrivKey, pubKey, clientHalf)
-	if err != nil {
-		return TLFCryptKeyInfo{}, kbfscrypto.TLFCryptKeyServerHalf{}, err
-	}
-
-	var serverHalfID kbfscrypto.TLFCryptKeyServerHalfID
-	serverHalfID, err =
-		kbfscrypto.MakeTLFCryptKeyServerHalfID(uid, pubKey, serverHalf)
-	if err != nil {
-		return TLFCryptKeyInfo{}, kbfscrypto.TLFCryptKeyServerHalf{}, err
-	}
-
-	clientInfo := TLFCryptKeyInfo{
-		ClientHalf:   encryptedClientHalf,
-		ServerHalfID: serverHalfID,
-		EPubKeyIndex: ePubIndex,
-	}
-	return clientInfo, serverHalf, nil
 }
 
 // DeviceServerHalfRemovalInfo is a map from a device's crypt public

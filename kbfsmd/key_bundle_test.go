@@ -10,48 +10,9 @@ import (
 	"testing"
 
 	"github.com/keybase/client/go/protocol/keybase1"
-	"github.com/keybase/go-codec/codec"
-	"github.com/keybase/kbfs/kbfscodec"
 	"github.com/keybase/kbfs/kbfscrypto"
 	"github.com/stretchr/testify/require"
 )
-
-type tlfCryptKeyInfoFuture struct {
-	TLFCryptKeyInfo
-	kbfscodec.Extra
-}
-
-func (cki tlfCryptKeyInfoFuture) toCurrent() TLFCryptKeyInfo {
-	return cki.TLFCryptKeyInfo
-}
-
-func (cki tlfCryptKeyInfoFuture) ToCurrentStruct() kbfscodec.CurrentStruct {
-	return cki.toCurrent()
-}
-
-func makeFakeTLFCryptKeyInfoFuture(t *testing.T) tlfCryptKeyInfoFuture {
-	id, err := kbfscrypto.MakeTLFCryptKeyServerHalfID(
-		keybase1.MakeTestUID(1),
-		kbfscrypto.MakeFakeCryptPublicKeyOrBust("fake"),
-		kbfscrypto.MakeTLFCryptKeyServerHalf([32]byte{0x3}))
-	require.NoError(t, err)
-	cki := TLFCryptKeyInfo{
-		kbfscrypto.MakeEncryptedTLFCryptKeyClientHalfForTest(
-			kbfscrypto.EncryptionSecretbox,
-			[]byte("fake encrypted data"),
-			[]byte("fake nonce")),
-		id, 5,
-		codec.UnknownFieldSetHandler{},
-	}
-	return tlfCryptKeyInfoFuture{
-		cki,
-		kbfscodec.MakeExtraOrBust("TLFCryptKeyInfo", t),
-	}
-}
-
-func TestTLFCryptKeyInfoUnknownFields(t *testing.T) {
-	testStructUnknownFields(t, makeFakeTLFCryptKeyInfoFuture(t))
-}
 
 func TestUserServerHalfRemovalInfoAddGeneration(t *testing.T) {
 	key1 := kbfscrypto.MakeFakeCryptPublicKeyOrBust("key1")

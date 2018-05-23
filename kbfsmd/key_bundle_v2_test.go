@@ -248,21 +248,21 @@ func TestToTLFWriterKeyBundleV3(t *testing.T) {
 	expectedWKBV3 := TLFWriterKeyBundleV3{
 		Keys: UserDeviceKeyInfoMapV3{
 			uid1: DeviceKeyInfoMapV3{
-				key1a: TLFCryptKeyInfo{
+				key1a: TLFCryptKeyInfoV3{
 					EPubKeyIndex: 0,
 				},
-				key1b: TLFCryptKeyInfo{
+				key1b: TLFCryptKeyInfoV3{
 					EPubKeyIndex: 1,
 				},
 			},
 			uid2: DeviceKeyInfoMapV3{
-				key2a: TLFCryptKeyInfo{
+				key2a: TLFCryptKeyInfoV3{
 					EPubKeyIndex: 1,
 				},
-				key2b: TLFCryptKeyInfo{
+				key2b: TLFCryptKeyInfoV3{
 					EPubKeyIndex: 0,
 				},
-				key2c: TLFCryptKeyInfo{
+				key2c: TLFCryptKeyInfoV3{
 					EPubKeyIndex: 0,
 				},
 			},
@@ -350,21 +350,21 @@ func TestToTLFReaderKeyBundleV3(t *testing.T) {
 	expectedRKBV3a := TLFReaderKeyBundleV3{
 		Keys: UserDeviceKeyInfoMapV3{
 			uid1: DeviceKeyInfoMapV3{
-				key1a: TLFCryptKeyInfo{
+				key1a: TLFCryptKeyInfoV3{
 					EPubKeyIndex: 0,
 				},
-				key1b: TLFCryptKeyInfo{
+				key1b: TLFCryptKeyInfoV3{
 					EPubKeyIndex: 2,
 				},
 			},
 			uid2: DeviceKeyInfoMapV3{
-				key2a: TLFCryptKeyInfo{
+				key2a: TLFCryptKeyInfoV3{
 					EPubKeyIndex: 1,
 				},
-				key2b: TLFCryptKeyInfo{
+				key2b: TLFCryptKeyInfoV3{
 					EPubKeyIndex: 3,
 				},
-				key2c: TLFCryptKeyInfo{
+				key2c: TLFCryptKeyInfoV3{
 					EPubKeyIndex: 3,
 				},
 			},
@@ -377,21 +377,21 @@ func TestToTLFReaderKeyBundleV3(t *testing.T) {
 	expectedRKBV3b := TLFReaderKeyBundleV3{
 		Keys: UserDeviceKeyInfoMapV3{
 			uid1: DeviceKeyInfoMapV3{
-				key1a: TLFCryptKeyInfo{
+				key1a: TLFCryptKeyInfoV3{
 					EPubKeyIndex: 0,
 				},
-				key1b: TLFCryptKeyInfo{
+				key1b: TLFCryptKeyInfoV3{
 					EPubKeyIndex: 3,
 				},
 			},
 			uid2: DeviceKeyInfoMapV3{
-				key2a: TLFCryptKeyInfo{
+				key2a: TLFCryptKeyInfoV3{
 					EPubKeyIndex: 1,
 				},
-				key2b: TLFCryptKeyInfo{
+				key2b: TLFCryptKeyInfoV3{
 					EPubKeyIndex: 2,
 				},
-				key2c: TLFCryptKeyInfo{
+				key2c: TLFCryptKeyInfoV3{
 					EPubKeyIndex: 2,
 				},
 			},

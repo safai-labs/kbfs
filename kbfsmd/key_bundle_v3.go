@@ -18,19 +18,70 @@ import (
 	"github.com/pkg/errors"
 )
 
-// A lot of this code is duplicated from key_bundle_v3.go, except with
+// A lot of this code is duplicated from key_bundle_v2.go, except with
 // DeviceKeyInfoMapV2 (keyed by keybase1.KID) replaced with
 // DeviceKeyInfoMapV3 (keyed by kbfscrypto.CryptPublicKey).
+
+// TLFCryptKeyInfoV3 is a per-device key half entry in the
+// TLF{Writer,Reader}KeyBundleV3.
+type TLFCryptKeyInfoV3 struct {
+	ClientHalf   kbfscrypto.EncryptedTLFCryptKeyClientHalf
+	ServerHalfID kbfscrypto.TLFCryptKeyServerHalfID
+	EPubKeyIndex int `codec:"i,omitempty"`
+
+	codec.UnknownFieldSetHandler
+}
+
+// splitTLFCryptKeyV3 splits the given TLFCryptKey into two parts -- the
+// client-side part (which is encrypted with the given keys), and the
+// server-side part, which will be uploaded to the server.
+func splitTLFCryptKeyV3(uid keybase1.UID,
+	tlfCryptKey kbfscrypto.TLFCryptKey,
+	ePrivKey kbfscrypto.TLFEphemeralPrivateKey, ePubIndex int,
+	pubKey kbfscrypto.CryptPublicKey) (
+	TLFCryptKeyInfoV3, kbfscrypto.TLFCryptKeyServerHalf, error) {
+	//    * create a new random server half
+	//    * mask it with the key to get the client half
+	//    * encrypt the client half
+	var serverHalf kbfscrypto.TLFCryptKeyServerHalf
+	serverHalf, err := kbfscrypto.MakeRandomTLFCryptKeyServerHalf()
+	if err != nil {
+		return TLFCryptKeyInfoV3{}, kbfscrypto.TLFCryptKeyServerHalf{}, err
+	}
+
+	clientHalf := kbfscrypto.MaskTLFCryptKey(serverHalf, tlfCryptKey)
+
+	var encryptedClientHalf kbfscrypto.EncryptedTLFCryptKeyClientHalf
+	encryptedClientHalf, err =
+		kbfscrypto.EncryptTLFCryptKeyClientHalf(ePrivKey, pubKey, clientHalf)
+	if err != nil {
+		return TLFCryptKeyInfoV3{}, kbfscrypto.TLFCryptKeyServerHalf{}, err
+	}
+
+	var serverHalfID kbfscrypto.TLFCryptKeyServerHalfID
+	serverHalfID, err =
+		kbfscrypto.MakeTLFCryptKeyServerHalfID(uid, pubKey, serverHalf)
+	if err != nil {
+		return TLFCryptKeyInfoV3{}, kbfscrypto.TLFCryptKeyServerHalf{}, err
+	}
+
+	clientInfo := TLFCryptKeyInfoV3{
+		ClientHalf:   encryptedClientHalf,
+		ServerHalfID: serverHalfID,
+		EPubKeyIndex: ePubIndex,
+	}
+	return clientInfo, serverHalf, nil
+}
 
 // DeviceKeyInfoMapV3 is a map from a user devices (identified by the
 // corresponding device CryptPublicKey) to the TLF's symmetric secret
 // key information.
-type DeviceKeyInfoMapV3 map[kbfscrypto.CryptPublicKey]TLFCryptKeyInfo
+type DeviceKeyInfoMapV3 map[kbfscrypto.CryptPublicKey]TLFCryptKeyInfoV3
 
 // static sizes in DeviceKeyInfoMapV3
 var (
 	ssCryptPublicKey  = int(reflect.TypeOf(kbfscrypto.CryptPublicKey{}).Size())
-	ssTLFCryptKeyInfo = int(reflect.TypeOf(TLFCryptKeyInfo{}).Size())
+	ssTLFCryptKeyInfo = int(reflect.TypeOf(TLFCryptKeyInfoV3{}).Size())
 )
 
 // Size implements the cache.Measurable interface.
@@ -70,7 +121,7 @@ func (dkimV3 DeviceKeyInfoMapV3) fillInDeviceInfos(
 			continue
 		}
 
-		clientInfo, serverHalf, err := splitTLFCryptKey(
+		clientInfo, serverHalf, err := splitTLFCryptKeyV3(
 			uid, tlfCryptKey, ePrivKey, ePubIndex, k)
 		if err != nil {
 			return nil, err
@@ -141,12 +192,12 @@ func writerUDKIMV2ToV3(codec kbfscodec.Codec, udkimV2 UserDeviceKeyInfoMapV2,
 					index, uid, kid)
 			}
 
-			var infoCopy TLFCryptKeyInfo
-			err := kbfscodec.Update(codec, &infoCopy, info)
-			if err != nil {
-				return nil, err
+			dkimV3[kbfscrypto.MakeCryptPublicKey(kid)] = TLFCryptKeyInfoV3{
+				ClientHalf:             info.ClientHalf,
+				ServerHalfID:           info.ServerHalfID,
+				EPubKeyIndex:           index,
+				UnknownFieldSetHandler: info.UnknownFieldSetHandler,
 			}
-			dkimV3[kbfscrypto.MakeCryptPublicKey(kid)] = infoCopy
 		}
 		udkimV3[uid] = dkimV3
 	}
