@@ -43,7 +43,7 @@ func (t EPubKeyLocationV2) String() string {
 	}
 }
 
-// TLFCryptKeyInfo is a per-device key half entry in the
+// TLFCryptKeyInfoV2 is a per-device key half entry in the
 // TLF{Writer,Reader}KeyBundleV2.
 type TLFCryptKeyInfoV2 struct {
 	ClientHalf   kbfscrypto.EncryptedTLFCryptKeyClientHalf
