@@ -559,6 +559,10 @@ func TestCrDoubleResolutionRmTree(t *testing.T) {
 			lsdir("a/b", m{}),
 			read("g", "hello"),
 		),
+	)
+}
+
+/**
 		as(charlie, noSync(),
 			// Touch a subdirectory that was removed by bob.
 			// Unfortunately even though these are just rmOps, they
@@ -592,7 +596,7 @@ func TestCrDoubleResolutionRmTree(t *testing.T) {
 		),
 	)
 }
-
+*/
 // bob makes files in a directory renamed by alice
 func TestCrUnmergedMakeFilesInRenamedDir(t *testing.T) {
 	test(t,

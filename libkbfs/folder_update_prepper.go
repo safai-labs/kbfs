@@ -190,15 +190,24 @@ func (idwl isDirtyWithLBC) IsDirty(
 // TODO: deal with multiple nodes for indirect blocks
 func (fup *folderUpdatePrepper) prepUpdateForPath(
 	ctx context.Context, lState *lockState, chargedTo keybase1.UserOrTeamID,
-	md *RootMetadata, newBlock Block, dir path, name string,
-	entryType EntryType, mtime bool, ctime bool, stopAt BlockPointer,
-	lbc localBcache) (path, DirEntry, *blockPutState, error) {
+	md *RootMetadata, newBlock Block, newBlockPtr BlockPointer, dir path,
+	name string, entryType EntryType, mtime bool, ctime bool,
+	stopAt BlockPointer, lbc localBcache) (
+	path, DirEntry, *blockPutState, error) {
 	// now ready each dblock and write the DirEntry for the next one
 	// in the path
 	currBlock := newBlock
 	var currDD *dirData
+	var undoFn func()
+	defer func() {
+		if undoFn != nil {
+			undoFn()
+		}
+	}()
 	if _, isDir := newBlock.(*DirBlock); isDir {
-		currDD = fup.blocks.newDirDataWithLBC(lState, dir, chargedTo, md, lbc)
+		newPath := dir.ChildPath(name, newBlockPtr)
+		currDD, undoFn = fup.blocks.newDirDataWithLBC(
+			lState, newPath, chargedTo, md, lbc)
 	}
 	currName := name
 	newPath := path{
@@ -206,7 +215,6 @@ func (fup *folderUpdatePrepper) prepUpdateForPath(
 		path:         make([]pathNode, 0, len(dir.path)),
 	}
 	bps := newBlockPutState(len(dir.path))
-	refPath := dir.ChildPathNoPtr(name)
 	var newDe DirEntry
 	doSetTime := true
 	now := fup.nowUnixNano()
@@ -222,8 +230,17 @@ func (fup *folderUpdatePrepper) prepUpdateForPath(
 				return path{}, DirEntry{}, nil, err
 			}
 			for newInfo := range newInfos {
+				fup.log.CDebugf(ctx, "Adding ref block %v", newInfo.BlockPointer)
 				md.AddRefBlock(newInfo)
 			}
+
+			dirUnrefs := fup.blocks.getDirtyDirUnrefsLocked(
+				lState, currDD.rootBlockPointer())
+			for _, unref := range dirUnrefs {
+				md.AddUnrefBlock(unref)
+			}
+			undoFn()
+			undoFn = nil
 		}
 
 		info, plainSize, err := fup.readyBlockMultiple(
@@ -232,6 +249,7 @@ func (fup *folderUpdatePrepper) prepUpdateForPath(
 		if err != nil {
 			return path{}, DirEntry{}, nil, err
 		}
+		fup.log.CDebugf(ctx, "Readied dir %v, %s", info.BlockPointer, currName)
 
 		// prepend to path and setup next one
 		newPath.path = append([]pathNode{{info.BlockPointer, currName}},
@@ -251,7 +269,8 @@ func (fup *folderUpdatePrepper) prepUpdateForPath(
 				path:         dir.path[:prevIdx+1],
 			}
 
-			dd := fup.blocks.newDirDataWithLBC(
+			var dd *dirData
+			dd, undoFn = fup.blocks.newDirDataWithLBC(
 				lState, prevDir, chargedTo, md, lbc)
 			de, err = dd.lookup(ctx, currName)
 			if _, noExists := errors.Cause(err).(NoSuchNameError); noExists {
@@ -286,11 +305,6 @@ func (fup *folderUpdatePrepper) prepUpdateForPath(
 			currBlock = prevDblock
 			currDD = dd
 			nextName = prevDir.tailName()
-			dirUnrefs := fup.blocks.GetDirtyDirUnrefs(
-				lState, prevDir.tailPointer())
-			for _, unref := range dirUnrefs {
-				md.AddUnrefBlock(unref)
-			}
 		}
 
 		if de.Type == Dir {
@@ -308,12 +322,10 @@ func (fup *folderUpdatePrepper) prepUpdateForPath(
 			bps.saveOldPtr(prevDe.BlockPointer)
 		} else {
 			// this is a new block
+			fup.log.CDebugf(ctx, "Adding new ref block %v, %d bytes", info.BlockPointer, info.EncodedSize)
 			md.AddRefBlock(info)
 		}
 
-		if len(refPath.path) > 1 {
-			refPath = *refPath.parentPath()
-		}
 		de.BlockInfo = info
 		de.PrevRevisions = de.PrevRevisions.addRevision(
 			md.Revision(), md.data.LastGCRevision)
@@ -480,7 +492,7 @@ func (fup *folderUpdatePrepper) prepTree(ctx context.Context, lState *lockState,
 		// Assume the mtime/ctime are already fixed up in the blocks
 		// in the lbc.
 		_, _, bps, err := fup.prepUpdateForPath(
-			ctx, lState, chargedTo, newMD, block,
+			ctx, lState, chargedTo, newMD, block, node.ptr,
 			*node.mergedPath.parentPath(), node.mergedPath.tailName(),
 			entryType, false, false, stopAt, lbc)
 		if err != nil {
@@ -543,10 +555,10 @@ func (fup *folderUpdatePrepper) updateResolutionUsageLockedCache(
 	for ptr := range refs {
 		if block, ok := localBlocks[ptr]; ok {
 			refSum += uint64(block.GetEncodedSize())
+			fup.log.CDebugf(ctx, "Ref'ing block %v, bytes=%d", ptr, block.GetEncodedSize())
 		} else {
 			refPtrsToFetch = append(refPtrsToFetch, ptr)
 		}
-		fup.log.CDebugf(ctx, "Ref'ing block %v", ptr)
 	}
 
 	// Look up the total sum of the ref blocks in parallel to get
@@ -701,6 +713,29 @@ func (fup *folderUpdatePrepper) updateResolutionUsageAndPointersLockedCache(
 			}
 		}
 	}
+	for ptr := range unmergedChains.toUnrefPointers {
+		// Unreference (and decrement the size) of any to-unref blocks
+		// that weren't created in the unmerged branch.  (Example:
+		// non-top dir blocks that were changed during the CR process.)
+		original, err := unmergedChains.originalFromMostRecentOrSame(ptr)
+		if err != nil {
+			return nil, err
+		}
+		if !unmergedChains.isCreated(original) {
+			unrefs[ptr] = true
+		}
+	}
+	for _, resOp := range unmergedChains.resOps {
+		for _, ptr := range resOp.Unrefs() {
+			original, err := unmergedChains.originalFromMostRecentOrSame(ptr)
+			if err != nil {
+				return nil, err
+			}
+			if !unmergedChains.isCreated(original) {
+				unrefs[ptr] = true
+			}
+		}
+	}
 
 	if isLocalSquash {
 		unmergedUsage := mostRecentUnmergedMD.DiskUsage()
@@ -760,6 +795,16 @@ func (fup *folderUpdatePrepper) updateResolutionUsageAndPointersLockedCache(
 	}
 	for ptr := range unmergedChains.toUnrefPointers {
 		toUnref[ptr] = true
+	}
+	// Unreference any newly-created blocks from resolutions that
+	// haven't been explicitly dealt with yet.  (Example: non-top
+	// directory blocks that are no longer needed.)
+	for _, resOp := range unmergedChains.resOps {
+		for _, ptr := range resOp.Refs() {
+			if !refs[ptr] && !unrefs[ptr] {
+				toUnref[ptr] = true
+			}
+		}
 	}
 	deletedRefs := make(map[BlockPointer]bool)
 	deletedUnrefs := make(map[BlockPointer]bool)
@@ -832,6 +877,12 @@ func (fup *folderUpdatePrepper) makeSyncTree(
 	kmd KeyMetadata, lbc localBcache,
 	newFileBlocks fileBlockMap) *pathTreeNode {
 	var root *pathTreeNode
+	var undoFn func()
+	defer func() {
+		if undoFn != nil {
+			undoFn()
+		}
+	}()
 	for _, p := range resolvedPaths {
 		fup.log.CDebugf(ctx, "Creating tree from merged path: %v", p.path)
 		var parent *pathTreeNode
@@ -880,7 +931,8 @@ func (fup *folderUpdatePrepper) makeSyncTree(
 				FolderBranch: p.FolderBranch,
 				path:         p.path[:i+1],
 			}
-			dd := fup.blocks.newDirDataWithLBC(
+			var dd *dirData
+			dd, undoFn = fup.blocks.newDirDataWithLBC(
 				lState, currPath, keybase1.UserOrTeamID(""), kmd, lbc)
 
 			for name := range blocks {
@@ -914,6 +966,8 @@ func (fup *folderUpdatePrepper) makeSyncTree(
 				}
 				nextNode.children[name] = childNode
 			}
+			undoFn()
+			undoFn = nil
 		}
 	}
 	return root
@@ -1347,8 +1401,16 @@ func (fup *folderUpdatePrepper) prepUpdateForPaths(ctx context.Context,
 			}
 			for _, ptr := range unmergedResOp.Unrefs() {
 				fup.log.CDebugf(ctx, "Unref pointer from old resOp: %v", ptr)
-				md.data.Changes.Ops = addUnrefToFinalResOp(
-					md.data.Changes.Ops, ptr, unmergedChains.doNotUnrefPointers)
+				original, err := unmergedChains.originalFromMostRecentOrSame(
+					ptr)
+				if err != nil {
+					return nil, nil, nil, err
+				}
+				if !unmergedChains.isCreated(original) {
+					md.data.Changes.Ops = addUnrefToFinalResOp(
+						md.data.Changes.Ops, ptr,
+						unmergedChains.doNotUnrefPointers)
+				}
 			}
 		}
 	}
