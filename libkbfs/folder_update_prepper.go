@@ -725,7 +725,11 @@ func (fup *folderUpdatePrepper) updateResolutionUsageAndPointersLockedCache(
 			unrefs[ptr] = true
 		}
 	}
-	for _, resOp := range unmergedChains.resOps {
+	if len(unmergedChains.resOps) > 0 {
+		// Only the first resolutionOp has blocks that might need to
+		// be unreferenced; subsequent resOps have "dropped" unrefs
+		// that we don't need anymore.
+		resOp := unmergedChains.resOps[0]
 		for _, ptr := range resOp.Unrefs() {
 			original, err := unmergedChains.originalFromMostRecentOrSame(ptr)
 			if err != nil {

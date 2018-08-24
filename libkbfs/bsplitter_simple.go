@@ -89,7 +89,7 @@ func NewBlockSplitterSimple(desiredBlockSize int64,
 		maxSize:                 maxSize,
 		maxPtrsPerBlock:         maxPtrs,
 		blockChangeEmbedMaxSize: blockChangeEmbedMaxSize,
-		maxDirEntriesPerBlock:   0, // disabled for now
+		maxDirEntriesPerBlock:   1, // disabled for now
 	}, nil
 }
 
