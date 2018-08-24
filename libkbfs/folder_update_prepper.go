@@ -725,19 +725,39 @@ func (fup *folderUpdatePrepper) updateResolutionUsageAndPointersLockedCache(
 			unrefs[ptr] = true
 		}
 	}
-	if len(unmergedChains.resOps) > 0 {
-		// Only the first resolutionOp has blocks that might need to
-		// be unreferenced; subsequent resOps have "dropped" unrefs
-		// that we don't need anymore.
-		resOp := unmergedChains.resOps[0]
+	for _, resOp := range unmergedChains.resOps {
 		for _, ptr := range resOp.Unrefs() {
+			fup.log.CDebugf(ctx, "Considering unref %v", ptr)
 			original, err := unmergedChains.originalFromMostRecentOrSame(ptr)
 			if err != nil {
 				return nil, err
 			}
 			if !unmergedChains.isCreated(original) {
-				unrefs[ptr] = true
+				fup.log.CDebugf(ctx, "Unrefing %v", ptr)
+				//unrefs[ptr] = true
 			}
+		}
+	}
+	resToRef := make(map[BlockPointer]bool)
+	if isLocalSquash {
+		for _, resOp := range unmergedChains.resOps {
+			for _, ptr := range resOp.Refs() {
+				fup.log.CDebugf(ctx, "Considering ref %v", ptr)
+				if !unrefs[ptr] {
+					resToRef[ptr] = true
+				}
+			}
+			for _, ptr := range resOp.Unrefs() {
+				delete(resToRef, ptr)
+			}
+			for _, update := range resOp.allUpdates() {
+				delete(resToRef, update.Unref)
+			}
+		}
+		for ptr := range resToRef {
+			fup.log.CDebugf(ctx, "Refing %v", ptr)
+			refs[ptr] = true
+			md.data.Changes.Ops[0].AddRefBlock(ptr)
 		}
 	}
 
@@ -787,26 +807,34 @@ func (fup *folderUpdatePrepper) updateResolutionUsageAndPointersLockedCache(
 	toUnref := make(map[BlockPointer]bool)
 	for ptr := range unmergedChains.originals {
 		if !refs[ptr] && !unrefs[ptr] {
+			fup.log.CDebugf(ctx, "(1) toUnref=%v", ptr)
 			toUnref[ptr] = true
 		}
 	}
 	for ptr := range unmergedChains.createdOriginals {
 		if !refs[ptr] && !unrefs[ptr] && unmergedChains.byOriginal[ptr] != nil {
+			fup.log.CDebugf(ctx, "(2) toUnref=%v", ptr)
 			toUnref[ptr] = true
 		} else if unmergedChains.blockChangePointers[ptr] {
+			fup.log.CDebugf(ctx, "(3) toUnref=%v", ptr)
 			toUnref[ptr] = true
 		}
 	}
 	for ptr := range unmergedChains.toUnrefPointers {
+		fup.log.CDebugf(ctx, "(4) toUnref=%v", ptr)
 		toUnref[ptr] = true
 	}
-	// Unreference any newly-created blocks from resolutions that
-	// haven't been explicitly dealt with yet.  (Example: non-top
-	// directory blocks that are no longer needed.)
 	for _, resOp := range unmergedChains.resOps {
 		for _, ptr := range resOp.Refs() {
+			if !isLocalSquash && !refs[ptr] && !unrefs[ptr] {
+				fup.log.CDebugf(ctx, "(5) toUnref=%v", ptr)
+				//toUnref[ptr] = true
+			}
+		}
+		for _, ptr := range resOp.Unrefs() {
 			if !refs[ptr] && !unrefs[ptr] {
-				toUnref[ptr] = true
+				fup.log.CDebugf(ctx, "(6) toUnref=%v", ptr)
+				//toUnref[ptr] = true
 			}
 		}
 	}
@@ -825,6 +853,7 @@ func (fup *folderUpdatePrepper) updateResolutionUsageAndPointersLockedCache(
 			return nil, err
 		}
 		if isUnflushed {
+			fup.log.CDebugf(ctx, "Deleting unflushed block %v", ptr)
 			blocksToDelete = append(blocksToDelete, ptr.ID)
 			deletedUnrefs[ptr] = true
 			// No need to unreference this since we haven't flushed it yet.
