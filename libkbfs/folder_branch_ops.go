@@ -3062,10 +3062,13 @@ func (fbo *folderBranchOps) createEntryLocked(
 		de.TeamWriter = session.UID
 	}
 
-	dirCacheUndoFn, err := fbo.blocks.AddDirEntryInCache(
+	dirCacheUndoFn, unrefs, err := fbo.blocks.AddDirEntryInCache(
 		ctx, lState, md.ReadOnly(), dirPath, name, de)
 	if err != nil {
 		return nil, DirEntry{}, err
+	}
+	for _, unref := range unrefs {
+		co.AddUnrefBlock(unref.BlockPointer)
 	}
 	fbo.dirOps = append(fbo.dirOps, cachedDirOp{co, []Node{dir, node}})
 	added := fbo.status.addDirtyNode(dir)
@@ -3455,10 +3458,13 @@ func (fbo *folderBranchOps) createLinkLocked(
 		},
 	}
 
-	dirCacheUndoFn, err := fbo.blocks.AddDirEntryInCache(
+	dirCacheUndoFn, unrefs, err := fbo.blocks.AddDirEntryInCache(
 		ctx, lState, md.ReadOnly(), dirPath, fromName, de)
 	if err != nil {
 		return DirEntry{}, err
+	}
+	for _, unref := range unrefs {
+		co.AddUnrefBlock(unref.BlockPointer)
 	}
 
 	err = fbo.notifyAndSyncOrSignal(
@@ -3584,11 +3590,15 @@ func (fbo *folderBranchOps) removeEntryLocked(ctx context.Context,
 		return err
 	}
 
-	dirCacheUndoFn, err := fbo.blocks.RemoveDirEntryInCache(
+	dirCacheUndoFn, unrefs, err := fbo.blocks.RemoveDirEntryInCache(
 		ctx, lState, md.ReadOnly(), dirPath, name, de)
 	if err != nil {
 		return err
 	}
+	for _, unref := range unrefs {
+		ro.AddUnrefBlock(unref.BlockPointer)
+	}
+
 	if de.Type == Dir {
 		removedNode := fbo.nodeCache.Get(de.BlockPointer.Ref())
 		if removedNode != nil {
@@ -3811,11 +3821,14 @@ func (fbo *folderBranchOps) renameLocked(
 	// Only the ctime changes on the directory entry itself.
 	newDe.Ctime = fbo.nowUnixNano()
 
-	dirCacheUndoFn, err := fbo.blocks.RenameDirEntryInCache(
+	dirCacheUndoFn, unrefs, err := fbo.blocks.RenameDirEntryInCache(
 		ctx, lState, md.ReadOnly(), oldParentPath, oldName, newParentPath,
 		newName, newDe, replacedDe)
 	if err != nil {
 		return err
+	}
+	for _, unref := range unrefs {
+		ro.AddUnrefBlock(unref.BlockPointer)
 	}
 
 	nodesToDirty := []Node{oldParent}
@@ -4063,11 +4076,15 @@ func (fbo *folderBranchOps) setExLocked(
 
 	sao.setFinalPath(filePath)
 
-	dirCacheUndoFn, err := fbo.blocks.SetAttrInDirEntryInCache(
+	dirCacheUndoFn, unrefs, err := fbo.blocks.SetAttrInDirEntryInCache(
 		ctx, lState, md, filePath, de, sao.Attr)
 	if err != nil {
 		return err
 	}
+	for _, unref := range unrefs {
+		sao.AddUnrefBlock(unref.BlockPointer)
+	}
+
 	return fbo.notifyAndSyncOrSignal(
 		ctx, lState, dirCacheUndoFn, []Node{file}, sao, md.ReadOnly())
 }
@@ -4140,11 +4157,15 @@ func (fbo *folderBranchOps) setMtimeLocked(
 
 	sao.setFinalPath(filePath)
 
-	dirCacheUndoFn, err := fbo.blocks.SetAttrInDirEntryInCache(
+	dirCacheUndoFn, unrefs, err := fbo.blocks.SetAttrInDirEntryInCache(
 		ctx, lState, md.ReadOnly(), filePath, de, sao.Attr)
 	if err != nil {
 		return err
 	}
+	for _, unref := range unrefs {
+		sao.AddUnrefBlock(unref.BlockPointer)
+	}
+
 	return fbo.notifyAndSyncOrSignal(
 		ctx, lState, dirCacheUndoFn, []Node{file}, sao, md.ReadOnly())
 }

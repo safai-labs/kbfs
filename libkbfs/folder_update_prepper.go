@@ -231,14 +231,18 @@ func (fup *folderUpdatePrepper) prepUpdateForPath(
 			}
 			for newInfo := range newInfos {
 				fup.log.CDebugf(ctx, "Adding ref block %v", newInfo.BlockPointer)
-				md.AddRefBlock(newInfo)
+				md.data.Changes.Ops[0].AddRefBlock(newInfo.BlockPointer)
+				md.AddRefBytes(uint64(newInfo.EncodedSize))
+				md.AddDiskUsage(uint64(newInfo.EncodedSize))
 			}
 
+			/**
 			dirUnrefs := fup.blocks.getDirtyDirUnrefsLocked(
 				lState, currDD.rootBlockPointer())
 			for _, unref := range dirUnrefs {
 				md.AddUnrefBlock(unref)
 			}
+			*/
 			undoFn()
 			undoFn = nil
 		}
@@ -732,6 +736,7 @@ func (fup *folderUpdatePrepper) updateResolutionUsageAndPointersLockedCache(
 			if err != nil {
 				return nil, err
 			}
+			// Figure out if the block is still live or not somehow.
 			if !unmergedChains.isCreated(original) {
 				fup.log.CDebugf(ctx, "Unrefing %v", ptr)
 				//unrefs[ptr] = true

@@ -317,7 +317,8 @@ type createOp struct {
 
 	// If true, this create op represents half of a rename operation.
 	// This op should never be persisted.
-	renamed bool
+	renamed         bool
+	renamedOriginal BlockPointer
 
 	// If true, during conflict resolution the blocks of the file will
 	// be copied.
