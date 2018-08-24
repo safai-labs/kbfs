@@ -828,13 +828,13 @@ func (fup *folderUpdatePrepper) updateResolutionUsageAndPointersLockedCache(
 		for _, ptr := range resOp.Refs() {
 			if !isLocalSquash && !refs[ptr] && !unrefs[ptr] {
 				fup.log.CDebugf(ctx, "(5) toUnref=%v", ptr)
-				toUnref[ptr] = true
+				//toUnref[ptr] = true
 			}
 		}
 		for _, ptr := range resOp.Unrefs() {
-			if !isLocalSquash && !refs[ptr] && !unrefs[ptr] {
+			if !refs[ptr] && !unrefs[ptr] {
 				fup.log.CDebugf(ctx, "(6) toUnref=%v", ptr)
-				toUnref[ptr] = true
+				//toUnref[ptr] = true
 			}
 		}
 	}
