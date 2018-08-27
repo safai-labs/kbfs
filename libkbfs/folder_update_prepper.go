@@ -570,7 +570,7 @@ func (fup *folderUpdatePrepper) updateResolutionUsageLockedCache(
 	// well (such as its directory entry or its indirect file block)
 	// if we happened to have come across it before.
 	refSumFetched, err := fup.blocks.GetCleanEncodedBlocksSizeSum(
-		ctx, lState, md.ReadOnly(), refPtrsToFetch, nil, fup.branch())
+		ctx, lState, md.ReadOnly(), refPtrsToFetch, nil, fup.branch(), false)
 	if err != nil {
 		return err
 	}
@@ -619,7 +619,7 @@ func (fup *folderUpdatePrepper) updateResolutionUsageLockedCache(
 	// since they require a different MD.
 	unrefSumFetched, err := fup.blocks.GetCleanEncodedBlocksSizeSum(
 		ctx, lState, mostRecentMergedMD, unrefPtrsToFetch, unrefs,
-		fup.branch())
+		fup.branch(), true)
 	if err != nil {
 		return err
 	}
