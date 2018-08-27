@@ -2669,7 +2669,7 @@ func (cr *ConflictResolver) createResolvedMD(ctx context.Context,
 						added = true
 					}
 				}
-				if cop.Type == Dir || cop.renamed || len(cop.Refs()) == 0 {
+				if cop.Type == Dir || len(cop.Refs()) == 0 {
 					continue
 				}
 				// Add any direct file blocks too into each create op,
@@ -2680,7 +2680,7 @@ func (cr *ConflictResolver) createResolvedMD(ctx context.Context,
 					return nil, err
 				}
 				trackSyncPtrChangesInCreate(
-					ptr, chain, unmergedChains, mergedChains, cop.NewName)
+					ptr, chain, unmergedChains, cop.NewName)
 			}
 		}
 	}

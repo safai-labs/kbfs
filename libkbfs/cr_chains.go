@@ -608,9 +608,6 @@ func (ccs *crChains) makeChainForOp(op op) error {
 		if err != nil {
 			return err
 		}
-		for _, ref := range realOp.Refs() {
-			co.AddRefBlock(ref)
-		}
 
 		// also keep track of the new parent for the renamed node
 		if realOp.Renamed.IsInitialized() {
@@ -644,7 +641,7 @@ func (ccs *crChains) makeChainForOp(op op) error {
 			ccs.renamedOriginals[renamedOriginal] = ri
 			// Remember what you create, in case we need to merge
 			// directories after a rename.
-			co.renamedOriginal = renamedOriginal
+			co.AddRefBlock(renamedOriginal)
 		}
 	case *syncOp:
 		err := ccs.addOp(realOp.File.Ref, op)

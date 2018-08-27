@@ -46,8 +46,8 @@ func fixupNamesInOps(fromName string, toName string, ops []op,
 				retOps = append(retOps, &realOpCopy)
 				done = true
 				// Fix up the new name if this is a rename.
-				if realOp.renamed && realOp.renamedOriginal.IsInitialized() {
-					renamed := realOp.renamedOriginal
+				if realOp.renamed && len(realOp.Refs()) > 0 {
+					renamed := realOp.Refs()[0]
 					original, ok := chains.originals[renamed]
 					if !ok {
 						original = renamed
@@ -269,7 +269,7 @@ func crActionConvertSymlink(unmergedMostRecent BlockPointer,
 // createOp for a new file.
 func trackSyncPtrChangesInCreate(
 	mostRecentTargetPtr BlockPointer, unmergedChain *crChain,
-	unmergedChains, mergedChains *crChains, toName string) {
+	unmergedChains *crChains, toName string) {
 	targetChain, ok := unmergedChains.byMostRecent[mostRecentTargetPtr]
 	var refs, unrefs []BlockPointer
 	if ok && targetChain.isFile() {
@@ -297,31 +297,28 @@ func trackSyncPtrChangesInCreate(
 			}
 		}
 	}
-	for _, uop := range unmergedChain.ops {
-		cop, ok := uop.(*createOp)
-		if !ok || cop.NewName != toName {
-			continue
+	if len(refs) > 0 {
+		for _, uop := range unmergedChain.ops {
+			cop, ok := uop.(*createOp)
+			if !ok || cop.NewName != toName {
+				continue
+			}
+			for _, ref := range refs {
+				cop.AddRefBlock(ref)
+			}
+			for _, unref := range unrefs {
+				cop.AddUnrefBlock(unref)
+			}
+			break
 		}
-		for _, ref := range refs {
-			cop.AddRefBlock(ref)
-		}
-		for _, unref := range unrefs {
-			cop.AddUnrefBlock(unref)
-		}
-		if cop.renamedOriginal.IsInitialized() &&
-			mergedChains.isDeleted(cop.renamedOriginal) {
-			cop.AddRefBlock(cop.renamedOriginal)
-		}
-		break
 	}
 }
 
 func (cuea *copyUnmergedEntryAction) trackSyncPtrChangesInCreate(
 	mostRecentTargetPtr BlockPointer, unmergedChain *crChain,
-	unmergedChains, mergedChains *crChains) {
+	unmergedChains *crChains) {
 	trackSyncPtrChangesInCreate(
-		mostRecentTargetPtr, unmergedChain, unmergedChains, mergedChains,
-		cuea.toName)
+		mostRecentTargetPtr, unmergedChain, unmergedChains, cuea.toName)
 }
 
 func makeLocalRenameOpForCopyAction(
@@ -392,7 +389,7 @@ func (cuea *copyUnmergedEntryAction) updateOps(
 	}
 	mostRecentTargetPtr := mergedEntry.BlockPointer
 	cuea.trackSyncPtrChangesInCreate(mostRecentTargetPtr, unmergedChain,
-		unmergedChains, mergedChains)
+		unmergedChains)
 
 	return nil
 }
@@ -699,21 +696,8 @@ func (rua *renameUnmergedAction) updateOps(
 		var ok bool
 		if co, ok = op.(*createOp); ok && co.NewName == rua.toName {
 			found = true
-			fmt.Printf("FOUND OP %s\n", co)
-			if len(co.RefBlocks) > 0 || co.renamed {
-				fmt.Printf("REF BLOCKS %d\n", len(co.RefBlocks))
-				toUnrefStart := 1
-				if rua.symPath == "" && !co.renamed &&
-					newMergedEntry.BlockPointer.IsInitialized() {
-					co.RefBlocks[0] = newMergedEntry.BlockPointer
-				} else {
-					toUnrefStart = 0
-				}
-				for _, ref := range co.RefBlocks[toUnrefStart:] {
-					fmt.Printf("Unref %v\n", ref)
-					unmergedChains.toUnrefPointers[ref] = true
-				}
-				co.RefBlocks = co.RefBlocks[:toUnrefStart]
+			if len(co.RefBlocks) > 0 {
+				co.RefBlocks[0] = newMergedEntry.BlockPointer
 			}
 			break
 		}
