@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/keybase/client/go/libkb"
+	"github.com/keybase/client/go/kbun"
 	"github.com/keybase/client/go/protocol/keybase1"
 	"github.com/keybase/kbfs/kbfscodec"
 	"github.com/keybase/kbfs/kbfscrypto"
@@ -33,7 +33,7 @@ func crTestInit(t *testing.T) (ctx context.Context, cancel context.CancelFunc,
 		FolderBranch{id, MasterBranch}, standard)
 	// usernames don't matter for these tests
 	config.mockKbpki.EXPECT().GetNormalizedUsername(gomock.Any(), gomock.Any()).
-		AnyTimes().Return(libkb.NormalizedUsername("mockUser"), nil)
+		AnyTimes().Return(kbun.NormalizedUsername("mockUser"), nil)
 
 	mockDaemon := NewMockKeybaseService(mockCtrl)
 	mockDaemon.EXPECT().LoadUserPlusKeys(
@@ -392,7 +392,7 @@ func testCRGetCROrBust(t *testing.T, config Config,
 // and make sure the resulting unmerged path maps correctly to the
 // merged path.
 func TestCRMergedChainsSimple(t *testing.T) {
-	var userName1, userName2 libkb.NormalizedUsername = "u1", "u2"
+	var userName1, userName2 kbun.NormalizedUsername = "u1", "u2"
 	config1, uid1, ctx, cancel := kbfsOpsConcurInit(t, userName1, userName2)
 	defer kbfsConcurTestShutdown(t, config1, ctx, cancel)
 
@@ -461,7 +461,7 @@ func TestCRMergedChainsSimple(t *testing.T) {
 // different, unrelated subdirectories, forcing the resolver to use
 // mostly original block pointers when constructing the merged path.
 func TestCRMergedChainsDifferentDirectories(t *testing.T) {
-	var userName1, userName2 libkb.NormalizedUsername = "u1", "u2"
+	var userName1, userName2 kbun.NormalizedUsername = "u1", "u2"
 	config1, uid1, ctx, cancel := kbfsOpsConcurInit(t, userName1, userName2)
 	defer kbfsConcurTestShutdown(t, config1, ctx, cancel)
 
@@ -532,7 +532,7 @@ func TestCRMergedChainsDifferentDirectories(t *testing.T) {
 // the subdirectories used by u2, forcing the resolver to generate
 // some recreateOps.
 func TestCRMergedChainsDeletedDirectories(t *testing.T) {
-	var userName1, userName2 libkb.NormalizedUsername = "u1", "u2"
+	var userName1, userName2 kbun.NormalizedUsername = "u1", "u2"
 	config1, uid1, ctx, cancel := kbfsOpsConcurInit(t, userName1, userName2)
 	defer kbfsConcurTestShutdown(t, config1, ctx, cancel)
 
@@ -638,7 +638,7 @@ func TestCRMergedChainsDeletedDirectories(t *testing.T) {
 // the subdirectories used by u2, forcing the resolver to follow the
 // path across the rename.
 func TestCRMergedChainsRenamedDirectory(t *testing.T) {
-	var userName1, userName2 libkb.NormalizedUsername = "u1", "u2"
+	var userName1, userName2 kbun.NormalizedUsername = "u1", "u2"
 	config1, uid1, ctx, cancel := kbfsOpsConcurInit(t, userName1, userName2)
 	defer kbfsConcurTestShutdown(t, config1, ctx, cancel)
 
@@ -727,7 +727,7 @@ func TestCRMergedChainsRenamedDirectory(t *testing.T) {
 // types of operations thrown in the mix (like u2 deleting unrelated
 // directories, etc).
 func TestCRMergedChainsComplex(t *testing.T) {
-	var userName1, userName2 libkb.NormalizedUsername = "u1", "u2"
+	var userName1, userName2 kbun.NormalizedUsername = "u1", "u2"
 	config1, uid1, ctx, cancel := kbfsOpsConcurInit(t, userName1, userName2)
 	defer kbfsConcurTestShutdown(t, config1, ctx, cancel)
 
@@ -923,7 +923,7 @@ func TestCRMergedChainsComplex(t *testing.T) {
 
 // Tests that conflict resolution detects and can fix rename cycles.
 func TestCRMergedChainsRenameCycleSimple(t *testing.T) {
-	var userName1, userName2 libkb.NormalizedUsername = "u1", "u2"
+	var userName1, userName2 kbun.NormalizedUsername = "u1", "u2"
 	config1, uid1, ctx, cancel := kbfsOpsConcurInit(t, userName1, userName2)
 	defer kbfsConcurTestShutdown(t, config1, ctx, cancel)
 
@@ -1019,7 +1019,7 @@ func TestCRMergedChainsRenameCycleSimple(t *testing.T) {
 
 // Tests that conflict resolution detects and renames conflicts.
 func TestCRMergedChainsConflictSimple(t *testing.T) {
-	var userName1, userName2 libkb.NormalizedUsername = "u1", "u2"
+	var userName1, userName2 kbun.NormalizedUsername = "u1", "u2"
 	config1, uid1, ctx, cancel := kbfsOpsConcurInit(t, userName1, userName2)
 	defer kbfsConcurTestShutdown(t, config1, ctx, cancel)
 
@@ -1098,7 +1098,7 @@ func TestCRMergedChainsConflictSimple(t *testing.T) {
 
 // Tests that conflict resolution detects and renames conflicts.
 func TestCRMergedChainsConflictFileCollapse(t *testing.T) {
-	var userName1, userName2 libkb.NormalizedUsername = "u1", "u2"
+	var userName1, userName2 kbun.NormalizedUsername = "u1", "u2"
 	config1, uid1, ctx, cancel := kbfsOpsConcurInit(t, userName1, userName2)
 	defer kbfsConcurTestShutdown(t, config1, ctx, cancel)
 
@@ -1218,7 +1218,7 @@ func TestCRMergedChainsConflictFileCollapse(t *testing.T) {
 // Test that actions get executed properly in the simple case of two
 // files being created simultaneously in the same directory.
 func TestCRDoActionsSimple(t *testing.T) {
-	var userName1, userName2 libkb.NormalizedUsername = "u1", "u2"
+	var userName1, userName2 kbun.NormalizedUsername = "u1", "u2"
 	config1, uid1, ctx, cancel := kbfsOpsConcurInit(t, userName1, userName2)
 	defer kbfsConcurTestShutdown(t, config1, ctx, cancel)
 
@@ -1316,7 +1316,7 @@ func TestCRDoActionsSimple(t *testing.T) {
 // Test that actions get executed properly in the case of two
 // simultaneous writes to the same file.
 func TestCRDoActionsWriteConflict(t *testing.T) {
-	var userName1, userName2 libkb.NormalizedUsername = "u1", "u2"
+	var userName1, userName2 kbun.NormalizedUsername = "u1", "u2"
 	config1, uid1, ctx, cancel := kbfsOpsConcurInit(t, userName1, userName2)
 	defer kbfsConcurTestShutdown(t, config1, ctx, cancel)
 
