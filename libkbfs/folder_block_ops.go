@@ -2320,6 +2320,7 @@ func (fbo *folderBlockOps) clearAllDirtyDirsLocked(
 	ctx context.Context, lState *lockState, kmd KeyMetadata) {
 	fbo.blockLock.AssertLocked(lState)
 	dirtyBCache := fbo.config.DirtyBlockCache()
+	fbo.log.CDebugf(ctx, "CLEARING DIRTY DIRS")
 	for ptr := range fbo.dirtyDirs {
 		dir := path{
 			FolderBranch: fbo.folderBranch,
