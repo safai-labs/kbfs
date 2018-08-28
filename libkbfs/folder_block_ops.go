@@ -290,6 +290,8 @@ func (fbo *folderBlockOps) getCleanEncodedBlockSizeLocked(ctx context.Context,
 	}
 
 	defer func() {
+		fbo.log.CDebugf(ctx, "GetEncodedSize ptr=%v size=%d status=%s: %+v",
+			ptr, size, status, err)
 		// In certain testing situations, a block might be represented
 		// with a 0 size in our journal or be missing from our local
 		// data stores, and we need to reconstruct the size using the

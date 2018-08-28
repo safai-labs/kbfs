@@ -619,7 +619,7 @@ func (fup *folderUpdatePrepper) updateResolutionUsageLockedCache(
 	// since they require a different MD.
 	unrefSumFetched, err := fup.blocks.GetCleanEncodedBlocksSizeSum(
 		ctx, lState, mostRecentMergedMD, unrefPtrsToFetch, unrefs,
-		fup.branch(), true)
+		fup.branch(), false)
 	if err != nil {
 		return err
 	}
@@ -734,7 +734,7 @@ func (fup *folderUpdatePrepper) updateResolutionUsageAndPointersLockedCache(
 			}
 			if !unmergedChains.isCreated(original) {
 				fup.log.CDebugf(ctx, "Unrefing %v", ptr)
-				//unrefs[ptr] = true
+				unrefs[ptr] = true
 			}
 		}
 	}
