@@ -956,6 +956,7 @@ func (j *blockJournal) ignoreBlocksAndMDRevMarkersInJournal(ctx context.Context,
 				continue
 			}
 			ignored++
+			j.log.CDebugf(ctx, "Ignoring %v", id)
 
 			e.Ignore = true
 			err = dj.writeJournalEntry(i, e)

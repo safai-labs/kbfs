@@ -321,9 +321,11 @@ func (fbo *folderBlockOps) getCleanEncodedBlockSizeLocked(ctx context.Context,
 	bops := fbo.config.BlockOps()
 	if rtype != blockReadParallel && rtype != blockLookup {
 		fbo.blockLock.DoRUnlockedIfPossible(lState, func(*lockState) {
+			fbo.log.CDebugf(ctx, "Calling EncodedSize %v", ptr)
 			size, status, err = bops.GetEncodedSize(ctx, kmd, ptr)
 		})
 	} else {
+		fbo.log.CDebugf(ctx, "Calling EncodedSize direct %v", ptr)
 		size, status, err = bops.GetEncodedSize(ctx, kmd, ptr)
 	}
 	if err != nil {

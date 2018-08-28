@@ -619,7 +619,7 @@ func (fup *folderUpdatePrepper) updateResolutionUsageLockedCache(
 	// since they require a different MD.
 	unrefSumFetched, err := fup.blocks.GetCleanEncodedBlocksSizeSum(
 		ctx, lState, mostRecentMergedMD, unrefPtrsToFetch, unrefs,
-		fup.branch(), false)
+		fup.branch(), true)
 	if err != nil {
 		return err
 	}

@@ -93,11 +93,15 @@ func (b *BlockOpsStandard) GetEncodedSize(ctx context.Context, kmd KeyMetadata,
 		if err != nil {
 			return 0, 0, err
 		}
-		if found {
+		if found && size > 0 {
+			b.log.CDebugf(ctx, "GetEncodedSize: %v from journal", blockPtr)
 			return size, keybase1.BlockStatus_LIVE, nil
+		} else if size == 0 {
+			b.log.CDebugf(ctx, "GetEncodedSize: %v falling through", blockPtr)
 		}
 	}
 
+	b.log.CDebugf(ctx, "Calling server GetEncodedSize for %v", blockPtr)
 	return b.config.BlockServer().GetEncodedSize(
 		ctx, kmd.TlfID(), blockPtr.ID, blockPtr.Context)
 }
