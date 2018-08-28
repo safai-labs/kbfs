@@ -653,7 +653,7 @@ func addUnrefToFinalResOp(ops opsList, ptr BlockPointer,
 		resOp = newResolutionOp()
 		ops = append(ops, resOp)
 	}
-	resOp.AddUnrefBlock(ptr)
+	resOp.AddUncommittedUnrefBlock(ptr)
 	return ops
 }
 
@@ -726,7 +726,7 @@ func (fup *folderUpdatePrepper) updateResolutionUsageAndPointersLockedCache(
 		}
 	}
 	for _, resOp := range unmergedChains.resOps {
-		for _, ptr := range resOp.Unrefs() {
+		for _, ptr := range resOp.CommittedUnrefs() {
 			fup.log.CDebugf(ctx, "Considering unref %v", ptr)
 			original, err := unmergedChains.originalFromMostRecentOrSame(ptr)
 			if err != nil {
@@ -834,7 +834,7 @@ func (fup *folderUpdatePrepper) updateResolutionUsageAndPointersLockedCache(
 		for _, ptr := range resOp.Unrefs() {
 			if !refs[ptr] && !unrefs[ptr] {
 				fup.log.CDebugf(ctx, "(6) toUnref=%v", ptr)
-				//toUnref[ptr] = true
+				toUnref[ptr] = true
 			}
 		}
 	}
@@ -895,6 +895,14 @@ func (fup *folderUpdatePrepper) updateResolutionUsageAndPointersLockedCache(
 			for _, unref := range toDelUnref {
 				fup.log.CDebugf(ctx, "Scrubbing unref %v", unref)
 				op.DelUnrefBlock(unref)
+			}
+		}
+		for _, resOp := range unmergedChains.resOps {
+			for _, unref := range resOp.Unrefs() {
+				if deletedUnrefs[unref] {
+					fup.log.CDebugf(ctx, "Scrubbing resOp unref %v", unref)
+					resOp.DelUnrefBlock(unref)
+				}
 			}
 		}
 	}
